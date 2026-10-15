@@ -1,0 +1,33 @@
+# Nunca versionar credenciales ni datos del servidor
+/config/config.php
+/config/*.local.php
+/config/secret*
+/.env
+/.env.*
+!/.env.example
+**/*.pem
+**/*.key
+**/id_rsa*
+
+# Contenido operacional (no es código fuente)
+/storage/*
+!/storage/.htaccess
+!/storage/README.md
+/public/downloads/
+/public/tv.apk
+/app/release-assets/
+/public/uploads/
+/backups/
+/tmp/
+/cache/
+/logs/
+
+# Binarios y artefactos de despliegue
+*.zip
+*.apk
+*.sql.gz
+.DS_Store
+.vscode/
+.idea/
+/node_modules/
+/vendor/
