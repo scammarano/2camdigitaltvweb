@@ -16,7 +16,9 @@ $desired=$read('device_config_desired',$id);
 $_POST=['_csrf'=>'fixture-csrf','action'=>'edit','id'=>(string)$id,'tenant_id'=>'1',
  'name'=>'Renamed screen','orientation'=>'landscape','width_px'=>'1920','height_px'=>'1080','location_label'=>'Hall'];
 if($case==='forged')$_POST['mode']='4';
-ob_start();require $root.'/public/devices.php';$html=ob_get_clean();
+$finished=false;
+register_shutdown_function(function()use(&$finished):void{if(!$finished){fwrite(STDERR,"Device form regression did not complete\n");exit(1);}});
+ob_start();require $root.'/public/devices.php';$html=ob_get_clean();restore_exception_handler();
 $after=$read('devices',$id);
 if((int)$after['mode']!==(int)$before['mode'])throw new RuntimeException('Identity form changed playback mode');
 if($read('device_config_desired',$id)!==$desired)throw new RuntimeException('Identity form changed desired config');
@@ -26,4 +28,5 @@ if($case==='identity'){
 if($case==='forged'&&!str_contains($html,'Recarga este formulario'))throw new RuntimeException('Missing actionable rejection');
 if(str_contains($html,'name="mode"'))throw new RuntimeException('Divergent mode selector remains');
 if(!str_contains($html,'Configurar modo y playlists'))throw new RuntimeException('Missing canonical configuration link');
+$finished=true;
 echo 'DEVICE_CRUD_PASS: '.$case.PHP_EOL;
