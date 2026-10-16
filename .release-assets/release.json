@@ -1,10 +1,10 @@
 {
-  "tag": "web-v0.4.24",
-  "source_commit": "b43da328cc1bb3bbbf6e285a5782eca3f0c149b3",
-  "asset": "SIGNAGE_UPDATE_v0.4.24_SPORTS_APK_RSA.zip",
-  "sha256": "4dfb1dec533ab68b18eff903518243ce770398a0f34eb3534fa77c5356838114",
-  "title": "Digital Signage Web 0.4.24 · Sports Control publicado",
-  "notes": "Sports Control 0.3.0 de Pruebas publicado en scammarano/2cam-sports, release sports-control-v0.3.0-test. Su APK original verificada con apksigner y aapt, minSdk23 para teléfono/tablet Android6+, firma original conservada. Este ZIP precarga paquete/certificado y modo público en la conexión Sports SOLO si era el marcador vacío y desactivado; no sobrescribe configuración del administrador ni activa la conexión. Activar Sports y Buscar ahora importa desde GitHub sin subir el APK manualmente. Importación pública REAL del sobre Sports probada en CI: RSA, identidad, hash, catálogo Pruebas, repetición sin duplicados y conservación de configuración. Incluye acceso público sin token y todo lo anterior desde web0.4.16. Digital Signage sigue en APK0.4.16. Turnos continúa privado y vacío, sin APK publicable. No se instala en hosting/dispositivos automáticamente. Sports0.3.0 no implementa aún búsqueda propia de actualizaciones del portal; firma permanente protegida para futuras compilaciones pendiente. ZIP SHA-256: 4dfb1dec533ab68b18eff903518243ce770398a0f34eb3534fa77c5356838114",
+  "tag": "web-v0.4.25",
+  "source_commit": "574581b0c8f5809068b9171af352a699ef2e56b3",
+  "asset": "SIGNAGE_UPDATE_v0.4.25_TURNOS_APK_RSA.zip",
+  "sha256": "2b5daad7098b2b0c3cecbc3f16ac291dc055b4ccd014b51df016e3ed0dc48d78",
+  "title": "Digital Signage Web0.4.25 · Turnos APK importable",
+  "notes": "Turnos0.2.0-local-test publicado en scammarano/2cam-turnos con su APK original y un sobre RSA compatible con el importador. Certificado DEBUG real verificado con apksigner/aapt, sourceCI38973490928 y pruebas API22/29. Esta actualización corrige el lector AndroidManifest para sufijos con varios guiones y precarga la identidad de Turnos solo en su conexión original vacía y desactivada; nunca reemplaza datos del administrador. El certificado se describe como autorizado, sin declararlo permanente/comercial. Activar Turnos y Buscar ahora importa a Pruebas, sin subir APK manualmente. Importación REAL pública probada en CI: RSA, metadatos reales, hash, idempotencia y catálogo. No promover esta APK DEBUG a Estable. Acumulativo desde web0.4.16; incluye Sports y modo público sin token. Digital Signage permanece en APK0.4.16. No se integra aún el visor Turnos con Signage ni se instala nada en hosting/dispositivos. ZIP SHA256: 2b5daad7098b2b0c3cecbc3f16ac291dc055b4ccd014b51df016e3ed0dc48d78",
   "android": {
     "asset": "2Cam_Digital_Signage_v0.4.16_DEBUG.apk",
     "sha256": "6df212f43a5eee1e2072b4dcb01a8b2258d4f541b5d13780bd1215a67653f7ae",
