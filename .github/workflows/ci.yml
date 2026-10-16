@@ -66,3 +66,6 @@ jobs:
           php tests/updater_roundtrip_test.php
           php tests/media_formats_test.php
           php tests/playlist_copy_test.php
+          php tests/playlist_page_test.php view
+          php tests/playlist_page_test.php copy
+          php tests/playlist_page_test.php forbidden
