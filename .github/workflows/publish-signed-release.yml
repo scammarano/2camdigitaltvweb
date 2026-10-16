@@ -2,7 +2,7 @@ name: Publish verified signed web release
 on:
   push:
     branches: [feat/four-modes-parity-v0419]
-    paths: ['.release-assets/**', 'scripts/publish_signed_release.py', '.github/workflows/publish-signed-release.yml']
+    paths: ['.release-assets/**', 'scripts/publish_signed_release.py', 'tests/apk_repository_live_test.php', '.github/workflows/publish-signed-release.yml']
 permissions:
   contents: write
   actions: read
