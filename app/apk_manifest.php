@@ -111,7 +111,7 @@ function ds_axml_parse(string $xml):array {
     $min=(string)($usesSdk['minSdkVersion']??'1');
     if(!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+$/D',$package))
         throw new RuntimeException('El APK no declara un nombre de aplicación Android válido');
-    if(!preg_match('/^[0-9]+(?:\.[0-9]+){1,3}(?:-[A-Za-z0-9.]+)?$/D',$version) || strlen($version)>40)
+    if(!preg_match('/^[0-9]+(?:\.[0-9]+){1,3}(?:-[A-Za-z0-9.-]+)?$/D',$version) || strlen($version)>40)
         throw new RuntimeException('La versión interna del APK no sigue el formato esperado (ej. 0.4.7 o 1.0)');
     if(!ctype_digit($code)||(int)$code<1||(int)$code>2147483647)
         throw new RuntimeException('El APK no declara un código interno de versión válido');

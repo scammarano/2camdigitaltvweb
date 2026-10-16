@@ -12,7 +12,7 @@ function apk_source_validate(array $v):array {
  $enabled=isset($v['enabled'])&&(string)$v['enabled']==='1';
  if($package!==''&&!preg_match('/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)+$/D',$package))throw new RuntimeException('Identificador Android inválido');
  if($cert!==''&&!preg_match('/^[a-f0-9]{64}$/D',$cert))throw new RuntimeException('Huella del certificado inválida (64 caracteres SHA-256)');
- if($enabled&&($package===''||$cert===''))throw new RuntimeException('Antes de activar, configura el paquete Android y su certificado permanente');
+ if($enabled&&($package===''||$cert===''))throw new RuntimeException('Antes de activar, configura el paquete Android y su certificado autorizado');
  if(($platform==='android-tv'&&$package!=='com.digitalsignage.tv')||($platform!=='android-tv'&&$package==='com.digitalsignage.tv'))throw new RuntimeException('El identificador Android no corresponde a esta aplicación');
  $mode=(string)($v['token_mode']??'shared');if(!in_array($mode,['public','shared','custom'],true))throw new RuntimeException('Origen de token inválido');
  return ['platform'=>$platform,'repository'=>$repo,'android_package'=>$package,'certificate_sha256'=>$cert,'token_mode'=>$mode,'enabled'=>(int)$enabled];
