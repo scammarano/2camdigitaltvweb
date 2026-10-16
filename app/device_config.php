@@ -9,8 +9,7 @@ function ds_config_migrate_v1(array $input):array {
   if(isset($input['enabled_modes'])&&($input['enabled_modes']&4))$input['enabled_modes']|=8;
  }
  unset($input['smart_app'],$input['smart_header_pct']);
- if(in_array($input['overlay_layout']??'',['left','right'],true))$input['overlay_layout']='side';
- if(($input['overlay_layout']??'')==='top')$input['overlay_layout']='bottom';
+ if(($input['overlay_layout']??'')==='right')$input['overlay_layout']='side';
  return $input;
 }
 function ds_config_validate(array $input):array {
