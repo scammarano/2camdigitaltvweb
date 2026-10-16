@@ -21,13 +21,14 @@ meta = json.loads((bundle / 'release.json').read_text())
 repo = os.environ['GH_REPO']
 source = meta['source_commit']
 assert re.fullmatch(r'[a-f0-9]{40}', source)
-assert meta['tag'] == 'web-v0.4.20'
+assert re.fullmatch(r'web-v0\.4\.(20|21)', meta['tag'])
+version = meta['tag'][5:]
 runs = api(f'repos/{repo}/actions/runs?head_sha={source}&per_page=30')['workflow_runs']
 assert any(r['name'] == 'Web portal CI' and r['conclusion'] == 'success' for r in runs), 'Source CI has not passed'
 with tempfile.TemporaryDirectory() as temporary:
     out = Path(temporary)
     package = out / meta['asset']
-    assert package.name == 'SIGNAGE_UPDATE_v0.4.20_FORMATOS_CENTRALES_RSA.zip'
+    assert re.fullmatch(r'SIGNAGE_UPDATE_v' + re.escape(version) + r'_[A-Z0-9_]+_RSA\.zip', package.name)
     package.write_bytes(base64.b64decode((bundle / 'web-update.b64').read_bytes(), validate=False))
     assert hashlib.sha256(package.read_bytes()).hexdigest() == meta['sha256']
     pub = bundle / 'update-public.txt'
@@ -36,7 +37,7 @@ with tempfile.TemporaryDirectory() as temporary:
     with zipfile.ZipFile(package) as archive:
         raw = archive.read('manifest.json')
         manifest = json.loads(raw)
-        assert manifest['source_commit'] == source and manifest['version'] == '0.4.20'
+        assert manifest['source_commit'] == source and manifest['version'] == version
         assert manifest['min_version'] == '0.4.16' and manifest['signature_algorithm'] == 'RSA-SHA256'
         (out / 'manifest.json').write_bytes(raw)
         (out / 'manifest.sig').write_bytes(base64.b64decode(archive.read('manifest.sig')))
@@ -65,11 +66,12 @@ with tempfile.TemporaryDirectory() as temporary:
              'Firma RSA y hashes comprobados; instalación aislada, respaldo SQL y conservación de configuración probados en CI. '
              'El ACK formal v2 sigue pendiente.\n\n'
              'ZIP SHA-256: ' + meta['sha256'])
+    notes = meta.get('notes', notes)
     notes_file = out / 'notes.md'
     notes_file.write_text(notes)
     existing = subprocess.run(['gh', 'api', f'repos/{repo}/releases/tags/{meta["tag"]}'], capture_output=True, text=True)
     if existing.returncode:
-        subprocess.run(['gh', 'release', 'create', meta['tag'], *map(str, assets), '--target', source, '--title', 'Digital Signage Web 0.4.20 — Formatos centrales', '--notes-file', str(notes_file)], check=True)
+        subprocess.run(['gh', 'release', 'create', meta['tag'], *map(str, assets), '--target', source, '--title', meta.get('title', 'Digital Signage Web ' + version), '--notes-file', str(notes_file)], check=True)
     else:
         published = {a['name']: a for a in json.loads(existing.stdout)['assets']}
         for asset in assets:

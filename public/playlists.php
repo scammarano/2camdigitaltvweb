@@ -1,6 +1,6 @@
 <?php
-require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_permission('playlists.view');
-$t=tenant();$error='';$ok='';
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/playlist_copy.php';require_permission('playlists.view');
+$t=tenant();$error='';$ok='';$createdCopy=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
   require_permission('playlists.edit');$target=post_tenant();$action=$_POST['action']??'create';
@@ -9,6 +9,10 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    if($name===''||!isset(layouts()[$layout])||!isset(orientations()[$ori]))throw new RuntimeException('Nombre/orientación/formato inválido');
    $effect=safe_transition((string)($_POST['transition_effect']??'fade'));$ms=safe_transition_ms($_POST['transition_ms']??600);
    execsql('INSERT INTO playlists(tenant_id,name,orientation,layout_type,transition_effect,transition_ms) VALUES(?,?,?,?,?,?)',[$target,$name,$ori,$layout,$effect,$ms]);
+  }elseif($action==='duplicate'){
+   $result=ds_playlist_duplicate((int)($_POST['playlist_id']??0),$target,(string)($_POST['copy_name']??''));
+   $createdCopy=['company'=>$target,'id'=>$result['id']];
+   $ok='Copia creada: '.(int)$result['lists'].' lista(s), '.(int)$result['items'].' renglón(es) y '.(int)$result['media_copied'].' archivo(s) copiados. La lista original y sus asignaciones se conservaron.';
   }elseif($action==='delete_playlist'){
    ds_cleanup_confirm();
    $id=(int)($_POST['playlist_id']??0);$ok=ds_cleanup_delete('playlists',$id,$target);
@@ -61,23 +65,30 @@ $filtered=dball('SELECT p.*,t.name company_name FROM playlists p JOIN tenants t 
 $poolWhere=is_super()?'1=1':'tenant_id=?';$poolParams=is_super()?[]:[tenant()];
 $lists=dball('SELECT * FROM playlists WHERE '.$poolWhere.' ORDER BY name',$poolParams);
 $media=dball('SELECT * FROM media WHERE '.$poolWhere.' ORDER BY name',$poolParams);
-$items=dball('SELECT i.*,p.name child_name,m.name media_name FROM playlist_items i LEFT JOIN playlists p ON p.id=i.child_playlist_id AND p.tenant_id=i.tenant_id LEFT JOIN media m ON m.id=i.media_id AND m.tenant_id=i.tenant_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.playlist_id,i.position,i.id',$poolParams);
-render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$error,$ok,$query,$fOri,$fLayout,$scope){
+$items=dball('SELECT i.*,p.name child_name,m.name media_name FROM playlist_items i LEFT JOIN playlists p ON p.id=i.child_playlist_id AND p.tenant_id=i.tenant_id LEFT JOIN media m ON m.id=i.media_id AND m.tenant_id=i.tenant_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.playlist_id,i.position,i.id',$scope===null?[]:[$scope]);
+render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$error,$ok,$query,$fOri,$fLayout,$scope,$createdCopy){
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
+ if($createdCopy)echo '<a class="btn btn-primary mb-3" href="'.h(url('playlists.php?company='.$createdCopy['company'].'#playlist-'.$createdCopy['id'])).'">Ver copia en la empresa de destino</a>';
  if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0);field('name','Nombre');echo '<label>Orientación</label>'.sel('orientation',orientations(),'landscape').'<label>Formato</label>'.sel('layout_type',layouts()).'<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
  echo '<form method="get" class="ds-filters" aria-label="Filtros de listas">'.company_filter_control($scope).'<div class="ds-filter-field"><label>Nombre de lista</label><input type="search" name="q" class="form-control" value="'.h($query).'" placeholder="Buscar lista"></div><div class="ds-filter-field"><label>Orientación</label><select name="orientation" class="form-select"><option value="">Todas</option>';foreach(orientations() as $key=>$label)echo '<option value="'.h($key).'" '.($fOri===$key?'selected':'').'>'.h($label).'</option>';echo '</select></div><div class="ds-filter-field"><label>Formato</label><select name="layout" class="form-select"><option value="">Todos</option>';foreach(layouts() as $key=>$label)echo '<option value="'.h($key).'" '.($fLayout===$key?'selected':'').'>'.h($label).'</option>';echo '</select></div><div class="ds-filter-actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-outline-secondary" href="'.h(url('playlists.php')).'">Limpiar</a></div></form><p class="ds-filter-count">Listas encontradas: '.count($filtered).'</p>';
  if(!$filtered)echo '<div class="card ds-list-empty">No hay listas que coincidan con los filtros.</div>';
  foreach($filtered as $p){
   $dsModals='';
   $settingsId='playlist-settings-'.(int)$p['id'];
-  echo '<div class="card card-body mb-3"><div class="d-flex justify-content-between flex-wrap gap-2"><h5><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span>'.h($p['name']).' — '.h(orientations()[$p['orientation']]??'').', '.h(layouts()[$p['layout_type']]??'').'<small class="d-block text-muted mt-1">Transición: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</small></h5><div class="d-flex gap-2">';
-  if(can('playlists.edit'))echo '<button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#'.$settingsId.'">Configurar transiciones</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-playlists-'.(int)$p['id'].'">Eliminar lista</button>';
+  echo '<div class="card card-body mb-3" id="playlist-'.(int)$p['id'].'"><div class="d-flex justify-content-between flex-wrap gap-2"><h5><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span>'.h($p['name']).' — '.h(orientations()[$p['orientation']]??'').', '.h(layouts()[$p['layout_type']]??'').'<small class="d-block text-muted mt-1">Transición: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</small></h5><div class="d-flex gap-2">';
+  if(can('playlists.edit'))echo '<button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#duplicate-playlist-'.(int)$p['id'].'">Duplicar / copiar a empresa</button> <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#'.$settingsId.'">Editar lista / empresa</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-playlists-'.(int)$p['id'].'">Eliminar lista</button>';
   echo '<a class="btn btn-sm btn-outline-primary" target="_blank" href="'.h(url('preview.php?id='.$p['id'])).'">Vista previa</a></div></div>';
   if(can('playlists.edit')){
+    ob_start();echo '<div class="modal fade" id="duplicate-playlist-'.(int)$p['id'].'" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5>Duplicar lista · '.h($p['name']).'</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body">';form_open();
+    echo '<input type="hidden" name="action" value="duplicate"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'">';
+    field('copy_name','Nombre de la copia','text',ds_playlist_copy_name((string)$p['name'],' — copia'));
+    echo str_replace('>Empresa</label>','>Empresa de destino</label>',company_select((int)$p['tenant_id']));
+    echo '<p class="ds-hint">Puedes copiarla a la misma empresa'.(is_super()?' o a otra empresa':'').'. Se conservan orden, tiempos, repeticiones, transiciones y sublistas. En la misma empresa se reutilizan los medios; entre empresas se crean archivos y registros propios. No se copian horarios ni asignaciones a pantallas y no se modifica la lista original.</p><button type="submit" class="btn btn-primary">Crear copia independiente</button></form></div></div></div></div>';
+    $dsModals.=ob_get_clean();
     ob_start();echo '<div class="modal fade" id="'.$settingsId.'" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Configuración de lista</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">';form_open();
     echo '<input type="hidden" name="action" value="rename">'.company_select((int)$p['tenant_id']).'<input type="hidden" name="playlist_id" value="'.(int)$p['id'].'">';
     field('name','Nombre',(string)'text',(string)$p['name']);
-    echo '<p class="ds-hint">Cambiar la empresa de una lista con elementos o asignaciones requiere desvincularlos primero.</p><label class="form-label">Efecto de transición</label>'.sel('transition_effect',transitions(),(string)$p['transition_effect']);
+    echo '<p class="ds-hint">Cambiar de empresa traslada la lista y solo se permite si está vacía y sin asignaciones. Para conservarla y usarla en otra empresa, utiliza «Duplicar / copiar a empresa».</p><label class="form-label">Efecto de transición</label>'.sel('transition_effect',transitions(),(string)$p['transition_effect']);
     field('transition_ms','Duración (milisegundos; 0 = corte)','number',(string)$p['transition_ms']);
     echo '<button class="btn btn-primary">Guardar cambios</button></form></div></div></div></div>';
     $dsModals.=ob_get_clean();
