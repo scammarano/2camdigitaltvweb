@@ -4,6 +4,10 @@ require dirname(__DIR__).'/app/github_updater.php';
 function check(bool $condition,string $message):void{if(!$condition)throw new RuntimeException('TEST FAIL: '.$message);}
 check(gh_api_url('')===DS_GITHUB_API,'api root');
 check(gh_api_url('/releases?per_page=30')===DS_GITHUB_API.'/releases?per_page=30','releases');
+foreach(gh_request_headers('') as $header)check(!str_starts_with(strtolower($header),'authorization:'),'public JSON sends no authorization');
+foreach(gh_request_headers('',true) as $header)check(!str_starts_with(strtolower($header),'authorization:'),'public asset sends no authorization');
+foreach(gh_request_headers('private-token',true,false) as $header)check(!str_starts_with(strtolower($header),'authorization:'),'never forward token to CDN');
+check(in_array('Authorization: Bearer private-token',gh_request_headers('private-token'),true),'private sends token to API');
 try{gh_api_url('/releases/../admin');throw new RuntimeException('unsafe path accepted');}catch(RuntimeException $e){check(str_contains($e->getMessage(),'no permitida'),'url path');}
 check(gh_asset_allowed_redirect('https://release-assets.githubusercontent.com/download/ab'),'redirect CDN valid');
 check(!gh_asset_allowed_redirect('http://github.com/foo'),'no HTTP');
@@ -21,7 +25,10 @@ check(gh_filter_releases([array_merge($release,['tag_name'=>'web-v0.4.19-evil'])
 $fakeToken=str_repeat('a',40);
 gh_token_save($fakeToken);
 check(gh_token_read()===$fakeToken,'token store/read');
+gh_access_mode_save('public');check(gh_access_token()===''&&gh_token_read()===$fakeToken,'public suppresses but preserves stored token');
+gh_access_mode_save('private');check(gh_access_token()===$fakeToken,'return to private restores token');
 check((fileperms(gh_token_path())&077)===0,'token mode private');
 gh_token_remove();
 check(gh_token_read()===null,'token deleted');
+check(gh_access_token()===null,'unconfigured private distinct from public');
 echo "PASS GitHub updater smoke tests\n";

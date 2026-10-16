@@ -14,7 +14,7 @@ function apk_source_validate(array $v):array {
  if($cert!==''&&!preg_match('/^[a-f0-9]{64}$/D',$cert))throw new RuntimeException('Huella del certificado inválida (64 caracteres SHA-256)');
  if($enabled&&($package===''||$cert===''))throw new RuntimeException('Antes de activar, configura el paquete Android y su certificado permanente');
  if(($platform==='android-tv'&&$package!=='com.digitalsignage.tv')||($platform!=='android-tv'&&$package==='com.digitalsignage.tv'))throw new RuntimeException('El identificador Android no corresponde a esta aplicación');
- $mode=(string)($v['token_mode']??'shared');if(!in_array($mode,['shared','custom'],true))throw new RuntimeException('Origen de token inválido');
+ $mode=(string)($v['token_mode']??'shared');if(!in_array($mode,['public','shared','custom'],true))throw new RuntimeException('Origen de token inválido');
  return ['platform'=>$platform,'repository'=>$repo,'android_package'=>$package,'certificate_sha256'=>$cert,'token_mode'=>$mode,'enabled'=>(int)$enabled];
 }
 function apk_source_token_path(string $platform):string {
@@ -22,6 +22,7 @@ function apk_source_token_path(string $platform):string {
  return ROOT.'/storage/secrets/apk-github-'.$platform;
 }
 function apk_source_token(array $source):?string {
+ if($source['token_mode']==='public')return ''; // Deliberately anonymous; do not fall back to stored tokens.
  if($source['token_mode']==='shared')return gh_token_read();
  $path=apk_source_token_path($source['platform']);if(is_link($path))throw new RuntimeException('Ruta de credencial no confiable');
  $value=trim((string)@file_get_contents($path));return $value!==''?$value:null;

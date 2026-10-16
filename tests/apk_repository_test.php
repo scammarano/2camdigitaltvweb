@@ -15,7 +15,7 @@ function rejects(callable $f,string $message):void{$rejected=false;try{$f();}cat
 $pdo=db();
 // Only schema creation, not the old migration's runtime APK seeding.
 $migration=file_get_contents($source.'/database/migrations/0.4.2.php');preg_match('/\$pdo->exec\("(CREATE TABLE IF NOT EXISTS app_releases .*?)"\);/s',$migration,$match);$pdo->exec($match[1]);
-$migration=require $source.'/database/migrations/0.4.22.php';$migration($pdo);$migration($pdo);
+$migration=require $source.'/database/migrations/0.4.23.php';$migration($pdo);$migration($pdo);
 $cfg=dbone("SELECT * FROM apk_repository_sources WHERE platform='android-tv'");
 $cfg['enabled']=1;$cfg['revision']=(int)$cfg['revision'];
 execsql("UPDATE apk_repository_sources SET enabled=1 WHERE platform='android-tv'");
@@ -29,8 +29,13 @@ function envelope(array $m,string $apk,$key,string $name):string{
 }
 $good=envelope($manifest,$apk,$private,'good');$asset=['id'=>922001];
 gh_token_save(str_repeat('a',40));
+// Switch public -> private with no deletion of credentials/catalog; anonymous mode must not leak token.
+$public=array_merge($cfg,['token_mode'=>'public']);apk_source_save($public,'',(int)$cfg['revision']);
+$cfg=dbone("SELECT * FROM apk_repository_sources WHERE platform='android-tv'");
+ck($cfg['token_mode']==='public'&&apk_source_token($cfg)===''&&gh_token_read()===str_repeat('a',40),'public works without consuming stored token');
 $release=['draft'=>false,'published_at'=>'2026-10-16T20:00:00Z','assets'=>[['id'=>$asset['id'],'size'=>filesize($good),'name'=>'2CAM_APK_android-tv_v'.$actual['version_name'].'_RSA.zip']]];
-$fetch=static fn()=>[$release];$download=static fn($token,$id,$dest)=>copy($good,$dest);
+$fetch=static function($path,$token,$repo)use($release){ck($token==='','public metadata request is anonymous');return [$release];};
+$download=static function($token,$id,$dest)use($good){ck($token==='','public download is anonymous');return copy($good,$dest);};
 $synced=apk_repositories_sync(true,$fetch,$download);ck($synced['android-tv']['ok']&&$synced['android-tv']['imported']===1,'scheduler imported new APK');
 ck(apk_repositories_sync(false,static function(){throw new RuntimeException('should be throttled');},$download)===[],'scheduler throttle');
 $row=dbone("SELECT * FROM app_releases WHERE platform='android-tv' AND channel='debug' AND version_code=?",[$actual['version_code']]);
@@ -48,6 +53,10 @@ ck($stable['channel']==='stable'&&$stable['status']==='published'&&$stable['stor
 ck(query_update('stable')['sha256']===$manifest['sha256'],'promoted APK offered to stable-only');
 ck(query_update('debug')['sha256']===$manifest['sha256'],'tests also sees stable APK');
 $failed=apk_repositories_sync(true,static function(){throw new RuntimeException('Simulated GitHub outage');},$download);ck(!$failed['android-tv']['ok']&&str_contains($failed['android-tv']['message'],'Simulated GitHub outage'),'visible network error');ck(query_update('stable')['available'],'network error preserves catalog');
+$saved=dbone("SELECT * FROM apk_repository_sources WHERE platform='android-tv'");$saved['token_mode']='shared';apk_source_save($saved,'',(int)$saved['revision']);
+$saved=dbone("SELECT * FROM apk_repository_sources WHERE platform='android-tv'");ck(apk_source_token($saved)===str_repeat('a',40),'private restored with stored token');
+ck(query_update('stable')['sha256']===$manifest['sha256'],'catalog survives public/private change');
+$cfg=$saved;
 rejects(fn()=>apk_promote_stable((int)$row['id']),'duplicate promotion');
 execsql("UPDATE app_releases SET status='retired' WHERE id=?",[$row['id']]);ck(!apk_repository_import($cfg,$asset,$good)['imported'],'retired not resurrected');
 foreach(['platform'=>'sports-control','package'=>'other.android.package','certificate_sha256'=>str_repeat('a',64),'sha256'=>str_repeat('b',64),'version_code'=>$actual['version_code']+1,'min_sdk'=>25] as $key=>$value){$bad=$manifest;$bad[$key]=$value;$path=envelope($bad,$apk,$private,'bad-'.$key);rejects(fn()=>apk_envelope_read($path,$cfg),'reject altered '.$key);}

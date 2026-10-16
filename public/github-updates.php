@@ -18,14 +18,19 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $candidate=trim((string)($_POST['github_token']??''));
             $test=gh_test_connection($candidate); // do not persist an unusable token
             gh_token_save($candidate);
-            $message='Token de solo lectura guardado. Conexión comprobada con el repositorio privado.';
+            gh_access_mode_save('private');
+            $message='Token de solo lectura guardado. Conexión comprobada.';
+        }elseif($action==='public'){
+            $test=gh_test_connection('');
+            gh_access_mode_save('public');
+            $message='Acceso público sin token activado. Las firmas RSA y los hashes siguen siendo obligatorios.';
         }elseif($action==='delete_token'){
-            gh_token_remove();$message='Token del portal retirado. Revócalo también desde GitHub si ya no lo utilizarás.';
+            gh_access_mode_save('private');gh_token_remove();$message='Conexión retirada. Si había un token, revócalo también en GitHub si ya no lo utilizarás.';
         }elseif($action==='test'){
-            $token=gh_token_read();if(!$token)throw new RuntimeException('Primero guarda un token GitHub válido.');
+            $token=gh_access_token();if($token===null)throw new RuntimeException('Selecciona acceso público o guarda un token GitHub válido.');
             $test=gh_test_connection($token);$message='Conexión probada correctamente; no se modificó ningún archivo.';
         }elseif($action==='install'){
-            $token=gh_token_read();if(!$token)throw new RuntimeException('Primero configura el acceso a GitHub.');
+            $token=gh_access_token();if($token===null)throw new RuntimeException('Primero configura el acceso a GitHub.');
             if(($_POST['confirm']??'')!=='INSTALAR' || ($_POST['ack_backup']??'')!=='1'){
                 throw new RuntimeException('Debes confirmar el respaldo y escribir INSTALAR.');
             }
@@ -34,26 +39,27 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $result=gh_install_release($token,(int)$id);
             $message='Actualización instalada: '.(string)$result['version'].'. Respaldo: '.(string)$result['backup'];
         }else{throw new RuntimeException('Operación no reconocida.');}
-    }catch(Throwable $e){$error=fault($e,'github_updates');}
+    }catch(Throwable $e){$incident=fault($e,'github_updates');$error=$e instanceof RuntimeException?substr($e->getMessage(),0,400).' · '.$incident:$incident;}
 }
-$connected=gh_token_read()!==null;
+$connected=gh_access_token()!==null;
 if($connected){
-    try{$releases=gh_available_releases((string)gh_token_read());}
+    try{$releases=gh_available_releases((string)gh_access_token());}
     catch(Throwable $e){$error=$error?:fault($e,'github_releases');}
 }
 render('Actualizar desde GitHub',function()use($connected,$message,$error,$test,$releases){
     if($message)echo '<div class="alert alert-success">'.h($message).'</div>';
     if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';
-    echo '<div class="alert alert-info">Repositorio privado: <strong>scammarano/2camdigitaltvweb</strong>. Versión instalada: <strong>'.h(trim(file_get_contents(ROOT.'/version.txt'))).'</strong>. Solo instalamos <strong>releases firmados con la clave RSA confiable del portal</strong>, no cualquier commit de main.</div>';
+    echo '<div class="alert alert-info">Repositorio: <strong>scammarano/2camdigitaltvweb</strong>. Versión instalada: <strong>'.h(trim(file_get_contents(ROOT.'/version.txt'))).'</strong>. Solo instalamos <strong>releases firmados con la clave RSA confiable del portal</strong>, no cualquier commit de main.</div>';
     echo '<div class="card card-body mb-3"><h5>1. Conectar GitHub (solo lectura)</h5>';
+    echo '<p>Modo actual: <strong>'.(gh_access_mode()==='public'?'Público, sin token':'Privado, con token').'</strong>. Puedes pasar de público a privado guardando un token; se conserva el historial y la validación de firmas.</p><form method="post" class="mb-3"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="public"><button class="btn btn-outline-primary">Comprobar y usar repositorio público sin token</button></form>';
     echo '<p>Genera un <strong>fine-grained personal access token</strong> con acceso exclusivo a este repositorio y permiso <strong>Contents: Read-only</strong> (Metadata se agrega automáticamente). No pegues el token en chats ni en repositorios.</p>';
-    echo '<p>Estado: <strong>'.($connected?'Conectado / token guardado':'Sin configurar').'</strong>. El token se almacena en <code>storage/secrets</code>, nunca se muestra después de guardarlo.</p>';
+    echo '<p>Estado: <strong>'.($connected?'Conexión configurada':'Sin configurar').'</strong>. Los tokens opcionales se guardan en almacenamiento privado, nunca se muestran después de guardarlos.</p>';
     echo '<form method="post" class="mb-2"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="save_token"><label for="github-token" class="form-label">Nuevo token GitHub</label><input id="github-token" name="github_token" type="password" class="form-control" autocomplete="off" required minlength="20" maxlength="300" placeholder="github_pat_..." spellcheck="false"><button class="btn btn-primary mt-2">Comprobar y guardar</button></form>';
     if($connected){
         echo '<div class="d-flex gap-2 flex-wrap"><form method="post"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="test"><button class="btn btn-outline-primary">Probar conexión sin instalar</button></form>';
         echo '<form method="post" onsubmit="return confirm(\'¿Quitar acceso GitHub de este portal?\')"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="delete_token"><button class="btn btn-outline-danger">Desconectar GitHub</button></form></div>';
     }
-    if($test){echo '<div class="alert alert-success mt-3">Acceso de lectura confirmado · Repositorio privado · '.(int)$test['release_count'].' release(s) visibles.</div>';}
+    if($test){echo '<div class="alert alert-success mt-3">Acceso de lectura confirmado · Repositorio '.($test['private']?'privado':'público').' · '.(int)$test['release_count'].' release(s) visibles.</div>';}
     echo '</div>';
     echo '<div class="card card-body mb-3"><h5>2. Buscar actualizaciones aprobadas</h5>';
     if(!$connected)echo '<p>Conecta GitHub para consultar las versiones disponibles.</p>';

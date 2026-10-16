@@ -15,6 +15,25 @@ const DS_GITHUB_ASSET_LIMIT = 50000000;
 function gh_token_path():string {
     return ROOT.'/storage/secrets/github_read_token';
 }
+function gh_access_mode():string {
+    return trim((string)@file_get_contents(ROOT.'/storage/secrets/github_access_mode'))==='public'?'public':'private';
+}
+function gh_access_mode_save(string $mode):void {
+    if(!in_array($mode,['public','private'],true))throw new RuntimeException('Modo de acceso GitHub inválido');
+    $folder=ROOT.'/storage/secrets';
+    if(is_link($folder))throw new RuntimeException('Ruta de conexión no confiable');
+    if(!is_dir($folder)&&!mkdir($folder,0700,true)&&!is_dir($folder))throw new RuntimeException('No se pudo guardar la conexión');
+    $target=$folder.'/github_access_mode';if(is_link($target))throw new RuntimeException('Ruta de conexión no confiable');
+    $temp=$folder.'/.github-mode-'.bin2hex(random_bytes(6));
+    try{if(file_put_contents($temp,$mode,LOCK_EX)!==strlen($mode))throw new RuntimeException('No se pudo guardar modo');chmod($temp,0600);if(!rename($temp,$target))throw new RuntimeException('No se pudo activar modo');}finally{if(is_file($temp))unlink($temp);}
+}
+/** Empty string explicitly means anonymous public access; null means unconfigured private access. */
+function gh_access_token():?string {return gh_access_mode()==='public'?'':gh_token_read();}
+function gh_request_headers(string $token,bool $binary=false,bool $apiHost=true):array {
+    $headers=['Accept: '.($binary?'application/octet-stream':'application/vnd.github+json'),'X-GitHub-Api-Version: 2022-11-28','User-Agent: 2Cam-DigitalSignage-Web-Updater'];
+    if($apiHost&&$token!=='')$headers[]='Authorization: Bearer '.$token;
+    return $headers;
+}
 function gh_token_read():?string {
     $file=gh_token_path();
     if(!is_file($file))return null;
@@ -52,12 +71,7 @@ function gh_api_url(string $path,string $repository=DS_GITHUB_REPO):string {
 }
 function gh_http_json(string $path,string $token,string $repository=DS_GITHUB_REPO):array {
     $url=gh_api_url($path,$repository);
-    $headers=[
-        'Authorization: Bearer '.$token,
-        'Accept: application/vnd.github+json',
-        'X-GitHub-Api-Version: 2022-11-28',
-        'User-Agent: 2Cam-DigitalSignage-Web-Updater',
-    ];
+    $headers=gh_request_headers($token);
     if(function_exists('curl_init')){
         $ch=curl_init($url);
         if($ch===false)throw new RuntimeException('No se puede iniciar consulta HTTPS a GitHub.');
@@ -104,13 +118,13 @@ function gh_http_json(string $path,string $token,string $repository=DS_GITHUB_RE
 }
 function gh_test_connection(string $token):array {
     $repo=gh_http_json('',$token);
-    if(($repo['full_name']??'')!==DS_GITHUB_REPO || !($repo['private']??false)){
-        throw new RuntimeException('El token no corresponde al repositorio privado configurado.');
+    if(($repo['full_name']??'')!==DS_GITHUB_REPO || ($token===''&&($repo['private']??true))){
+        throw new RuntimeException('El repositorio no es accesible con el modo seleccionado. Si volvió a privado, configura un token de lectura.');
     }
     $readme=gh_http_json('/contents/README.md',$token);
     if(($readme['type']??'')!=='file')throw new RuntimeException('El token no tiene acceso de lectura al código del repositorio.');
     $releases=gh_http_json('/releases?per_page=30',$token);
-    return ['repository'=>DS_GITHUB_REPO,'private'=>true,'contents_readable'=>true,
+    return ['repository'=>DS_GITHUB_REPO,'private'=>(bool)($repo['private']??true),'contents_readable'=>true,
         'release_count'=>count($releases),'current_version'=>trim((string)@file_get_contents(ROOT.'/version.txt'))];
 }
 /** Select ONLY completed, non-prerelease, versioned releases with a signed ZIP. */
@@ -166,9 +180,7 @@ function gh_download_asset(string $token,int $assetId,string $target,string $rep
         if(!gh_asset_allowed_redirect($url))throw new RuntimeException('GitHub intentó redirigir a un destino no permitido.');
         $host=strtolower((string)parse_url($url,PHP_URL_HOST));
         $firstParty=$host==='api.github.com';
-        $headers=['Accept: application/octet-stream','X-GitHub-Api-Version: 2022-11-28',
-            'User-Agent: 2Cam-DigitalSignage-Web-Updater'];
-        if($firstParty)$headers[]='Authorization: Bearer '.$token;
+        $headers=gh_request_headers($token,true,$firstParty);
         // PHP streams fallback for shared hosting without the cURL extension.
         if(!function_exists('curl_init')){
             $context=stream_context_create([
