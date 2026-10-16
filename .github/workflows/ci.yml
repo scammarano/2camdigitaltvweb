@@ -1,14 +1,8 @@
-name: Validación portal PHP
+name: Web portal CI
+
 on:
   push:
-    branches: [main]
-    paths:
-      - 'app/**'
-      - 'public/**'
-      - 'database/**'
-      - 'config/**'
-      - 'version.txt'
-      - '.github/workflows/ci.yml'
+    branches: [main, feat/four-modes-parity-v0419]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -21,20 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: PHP 8.1
+      - name: PHP setup
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
           tools: none
-      - name: Validar PHP
+      - name: PHP syntax check
         shell: bash
         run: |
           set -euo pipefail
-          test -f version.txt
-          while IFS= read -r -d '' file; do
-            php -l "$file" >/dev/null
-          done < <(find app public database -type f -name '*.php' -print0)
-      - name: Rechazar datos privados y APK
+          while IFS= read -r -d '' file; do php -l "$file" >/dev/null; done < <(find app public database -type f -name '*.php' -print0)
+      - run: php tests/config_modes_test.php
+      - name: Check runtime files absent
         shell: bash
         run: |
           set -euo pipefail
@@ -42,6 +34,29 @@ jobs:
           test ! -e public/tv.apk
           test ! -e app/release-assets
           if find . -type f \( -name '*.apk' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
-            echo 'NO incluir credenciales, llaves privadas o APK en el repositorio web.'
-            exit 1
+            echo 'Error: private keys or APK binaries must not be committed.'; exit 1
           fi
+          test -f version.txt
+
+  config-database:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: signage_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -ptestpass"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo_mysql
+      - name: Configure isolated database and verify tenant isolation
+        run: |
+          php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
+          php tests/config_tenant_test.php

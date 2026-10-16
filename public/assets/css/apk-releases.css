@@ -1,0 +1,8 @@
+/* v0.4.9 portal mode — cards remain public but are embedded in the existing sidebar shell when logged in. */
+.apk-embedded{color:#152743;background:transparent;line-height:1.5;font-size:14px}
+.apk-embedded .apk-frame{max-width:1200px;padding:0;width:100%}
+.apk-embedded .apk-hero{padding-top:6px}
+.apk-embedded .apk-release-card{box-shadow:0 2px 14px rgba(17,39,70,.04)}
+.apk-embedded .apk-hero h1{font-size:clamp(22px,3vw,34px)}
+.apk-embedded .apk-tabs a{font-size:13px}
+@media(max-width:720px){.apk-embedded .apk-release-grid{display:block}.apk-embedded .apk-release-card{margin-bottom:15px}}
