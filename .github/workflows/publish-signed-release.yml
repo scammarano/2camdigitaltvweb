@@ -16,3 +16,34 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: python3 scripts/publish_signed_release.py
+  verify-live-import:
+    needs: publish
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: signage_import_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -ptestpass"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo_mysql, zip, openssl, curl
+      - name: Check signed APK import from the actual published GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if [ ! -f .release-assets/apk-envelope-manifest.json ]; then echo 'Legacy release; no signed APK envelope'; exit 0; fi
+          php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_import_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
+          php tests/config_tenant_test.php
+          php tests/apk_repository_live_test.php

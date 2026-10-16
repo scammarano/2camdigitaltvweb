@@ -42,7 +42,7 @@ function gh_token_remove():void {
     $file=gh_token_path();
     if(is_file($file) && !unlink($file))throw new RuntimeException('No fue posible quitar el token almacenado.');
 }
-/** Fixed host and path: no user-supplied URLs or repository names. */
+/** Fixed API host; repository identifiers are validated, never arbitrary URLs. */
 function gh_api_url(string $path,string $repository=DS_GITHUB_REPO):string {
     if(!preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$#D',$repository))throw new RuntimeException('Repositorio GitHub inválido');
     if($path!=='' && (!preg_match('#^/[A-Za-z0-9_.?=&/\-]+$#D',$path) || str_contains($path,'..'))){
@@ -96,7 +96,7 @@ function gh_http_json(string $path,string $token,string $repository=DS_GITHUB_RE
     }
     if($code===401)throw new RuntimeException('GitHub rechazó el token (401). Crea uno nuevo con lectura del repositorio.');
     if($code===403)throw new RuntimeException('GitHub devolvió 403. Revisa permisos del token, autorización SSO y límites de API.');
-    if($code===404)throw new RuntimeException('Repositorio o recurso privado no accesible (404). Revisa el acceso del token a '.DS_GITHUB_REPO.'.');
+    if($code===404)throw new RuntimeException('Repositorio o recurso privado no accesible (404). Revisa el acceso del token a '.$repository.'.');
     if($code!==200)throw new RuntimeException('GitHub respondió HTTP '.$code.'. Reintenta o revisa el diagnóstico.');
     try{$result=json_decode($data,true,64,JSON_THROW_ON_ERROR);}catch(JsonException $e){throw new RuntimeException('GitHub devolvió JSON no válido.');}
     if(!is_array($result))throw new RuntimeException('Datos inesperados en la respuesta de GitHub.');

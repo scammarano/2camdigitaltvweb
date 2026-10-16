@@ -21,7 +21,7 @@ meta = json.loads((bundle / 'release.json').read_text())
 repo = os.environ['GH_REPO']
 source = meta['source_commit']
 assert re.fullmatch(r'[a-f0-9]{40}', source)
-assert re.fullmatch(r'web-v0\.4\.(20|21)', meta['tag'])
+assert re.fullmatch(r'web-v0\.4\.(20|21|22)', meta['tag'])
 version = meta['tag'][5:]
 runs = api(f'repos/{repo}/actions/runs?head_sha={source}&per_page=30')['workflow_runs']
 assert any(r['name'] == 'Web portal CI' and r['conclusion'] == 'success' for r in runs), 'Source CI has not passed'
@@ -51,12 +51,30 @@ with tempfile.TemporaryDirectory() as temporary:
     if 'android' in meta:
         android = meta['android']
         apk = out / android['asset']
-        assert apk.name == '2Cam_Digital_Signage_v0.4.15_DEBUG.apk'
+        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16)_DEBUG\.apk', apk.name)
         chunks = sorted(bundle.glob('android-*.b64'))
         assert chunks
         apk.write_bytes(base64.b64decode(''.join(p.read_text().strip() for p in chunks)))
         assert hashlib.sha256(apk.read_bytes()).hexdigest() == android['sha256']
         assets.append(apk)
+        if 'envelope' in android:
+            envelope_meta = android['envelope']
+            envelope_raw = (bundle / 'apk-envelope-manifest.json').read_bytes()
+            envelope_sig = (bundle / 'apk-envelope-manifest.sig').read_bytes()
+            signed = json.loads(envelope_raw)
+            (out / 'apk-manifest.json').write_bytes(envelope_raw)
+            (out / 'apk-manifest.sig').write_bytes(base64.b64decode(envelope_sig, validate=False))
+            subprocess.run(['openssl', 'dgst', '-sha256', '-verify', str(pub), '-signature', str(out / 'apk-manifest.sig'), str(out / 'apk-manifest.json')], check=True)
+            assert signed['platform'] == 'android-tv' and signed['package'] == 'com.digitalsignage.tv' and signed['channel'] == 'debug'
+            assert signed['certificate_sha256'] == android['certificate_sha256'] == '5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a'
+            assert signed['sha256'] == android['sha256'] and signed['size'] == apk.stat().st_size
+            envelope = out / envelope_meta['asset']
+            assert envelope.name == f'2CAM_APK_android-tv_v{signed["version_name"]}_RSA.zip'
+            with zipfile.ZipFile(envelope, 'w') as archive:
+                for name, data in [('manifest.json', envelope_raw), ('manifest.sig', envelope_sig), ('app.apk', apk.read_bytes())]:
+                    archive.writestr(zipfile.ZipInfo(name), data)
+            assert hashlib.sha256(envelope.read_bytes()).hexdigest() == envelope_meta['sha256']
+            assets.append(envelope)
     notes = ('Formatos centrales de medios: una definición para todas las pantallas y modos. '
              'Se retiran los seis porcentajes por pantalla de web, APK y LAN. '
              'Solo SUPERADMIN puede cambiar los formatos; se rechazan cambios incompatibles con los medios existentes.\n\n'
