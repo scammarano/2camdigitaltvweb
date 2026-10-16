@@ -1,0 +1,63 @@
+/* 2Cam Digital Signage 0.4.15 — responsive per-asset wizard (no permanent side-form). */
+.ds-import-modal .modal-dialog{max-width:1160px}
+.ds-import-modal .modal-body{max-height:78vh;overflow-y:auto;padding:23px}
+.ds-import-modal [hidden]{display:none!important}
+.ds-import-hint{font-size:13px;line-height:1.55;color:#5a718b}
+.ds-import-progress-line{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 15px;font-size:14px;color:#153d6d}
+.ds-import-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:20px;align-items:start}
+.ds-import-visual{background:#f0f5fa;border:1px solid #d7e4f1;border-radius:12px;padding:17px;position:sticky;top:4px}
+.ds-import-photo{height:min(42vh,380px);min-height:230px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;border:1px dashed #a8bbd0;background:#fff}
+.ds-import-photo img,.ds-import-photo video{width:100%;height:100%;object-fit:contain;display:block}
+.ds-import-photo span{font-size:14px;color:#7187a0}
+.ds-import-file-meta{display:flex;flex-direction:column;gap:5px;margin:10px 0 14px;overflow-wrap:anywhere}
+.ds-import-file-meta strong{font-size:14px;color:#1d395c}
+.ds-import-file-meta span{font-size:12px;color:#61768d}
+.ds-import-current-diagram{background:#fff;display:flex;align-items:center;gap:17px;border-radius:10px;border:1px solid #dce6f0;padding:14px}
+.ds-import-current-diagram .ds-preview-mini-screen{width:123px;max-width:123px;min-width:123px;flex:none;margin:0}
+.ds-import-current-diagram .ds-preview-mini-screen[data-orientation="portrait"]{width:58px;max-width:58px;min-width:58px}
+.ds-import-current-diagram strong{display:block;color:#153d6d;font-size:13px}
+.ds-import-current-diagram span[data-import-geometry-size]{display:block;color:#087e45;font-weight:750;font-size:12px;margin-top:5px}
+.ds-import-fields{padding:10px 0}
+.ds-import-fields [data-import-company] .form-label{margin-top:0}
+.ds-import-fields label{font-size:13px;font-weight:720;color:#263e58}
+.ds-import-choice-group{border:0;margin:18px 0 0;padding:0}
+.ds-import-choice-group legend{font-size:13px;font-weight:750;margin:0 0 8px;color:#213c5b}
+.ds-import-option-grid{display:flex;gap:10px}
+.ds-import-option-grid button,.ds-import-zone-grid button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:8px;border:2px solid #dbe5f0;border-radius:10px;background:#fff;color:#203f60;font-size:12px;font-weight:720;cursor:pointer;min-height:72px;min-width:0;transition:border .15s,background .15s}
+.ds-import-option-grid button{flex:1;min-width:80px}
+.ds-import-option-grid .ds-preview-mini-screen{width:76px;height:auto;aspect-ratio:16/9;flex:none}
+.ds-import-option-grid .ds-preview-mini-screen[data-orientation="portrait"]{width:28px;height:auto;aspect-ratio:9/16}
+.ds-import-zone-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ds-import-zone-grid .ds-preview-mini-screen{display:block;width:95px;height:auto;aspect-ratio:16/9;max-width:100%;flex:none}
+.ds-import-zone-grid .ds-preview-mini-screen[data-orientation="portrait"]{width:35px;aspect-ratio:9/16}
+.ds-import-zone-grid button[aria-pressed="true"],.ds-import-option-grid button[aria-pressed="true"]{background:#eafaef;border-color:#098448;color:#075c36;box-shadow:0 0 0 2px #09844820}
+.ds-import-zone-grid button:focus-visible,.ds-import-option-grid button:focus-visible{outline:3px solid #1875c5;outline-offset:2px}
+.ds-import-validation{border-radius:8px;background:#edf3f9;color:#37516c;padding:11px;margin:17px 0 0;font-size:13px;line-height:1.45}
+.ds-import-validation.is-ok{border-left:4px solid #128354;background:#ecfbf2;color:#086138}
+.ds-import-validation.is-error{border-left:4px solid #c33748;background:#fff0f1;color:#9f2534}
+.ds-import-validation.is-warn{border-left:4px solid #ca8832;background:#fff9e6;color:#855c11}
+.ds-import-nav{display:flex;gap:9px;justify-content:space-between;flex-wrap:wrap;margin-top:23px;border-top:1px solid #e2e9f3;padding-top:16px}
+.ds-import-more{display:flex;justify-content:space-between;gap:9px;flex-wrap:wrap;margin:13px 0 3px}
+.ds-import-review-list{max-height:53vh;overflow:auto;border:1px solid #e0e9f4;border-radius:10px}
+.ds-import-review-row{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;gap:10px;border-bottom:1px solid #e9edf2}
+.ds-import-review-row:last-child{border-bottom:0}
+.ds-import-review-info{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere;gap:3px}
+.ds-import-review-info strong{font-size:13px}
+.ds-import-review-info small{font-size:11px;color:#5b7288}
+.ds-import-review-row.invalid{border-left:4px solid #cc3645;background:#fff5f6}
+.ds-import-review-row.valid{border-left:4px solid #1c9956}
+.ds-import-review-row.skipped{opacity:.60}
+.ds-import-review-row.uploaded{background:#ecfff4}
+.ds-import-review-buttons{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin:16px 0 0}
+.ds-import-upload-status{margin:16px 0;display:grid;gap:8px;font-size:13px}
+.ds-import-upload-row{padding:8px 10px;background:#f0f4f9;border-radius:6px}
+.ds-import-upload-row.is-ok{background:#eafbF0;color:#087039}
+.ds-import-upload-row.is-error{background:#fff0f2;color:#a82a3a}
+@media(max-width:800px){
+ .ds-import-modal .modal-body{max-height:82vh;padding:12px}
+ .ds-import-grid{grid-template-columns:1fr;gap:12px}
+ .ds-import-visual{position:static}
+ .ds-import-photo{height:32vh;min-height:190px}
+ .ds-import-zone-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .ds-import-nav button{flex:1}
+}

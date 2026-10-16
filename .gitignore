@@ -1,4 +1,4 @@
-# Nunca versionar credenciales ni datos del servidor
+# Runtime configuration and secrets (never commit)
 /config/config.php
 /config/*.local.php
 /config/secret*
@@ -9,7 +9,7 @@
 **/*.key
 **/id_rsa*
 
-# Contenido operacional (no es código fuente)
+# Uploaded customer data and server state
 /storage/*
 !/storage/.htaccess
 !/storage/README.md
@@ -22,12 +22,12 @@
 /cache/
 /logs/
 
-# Binarios y artefactos de despliegue
+# Packaging and local cache
 *.zip
 *.apk
 *.sql.gz
 .DS_Store
 .vscode/
 .idea/
-/node_modules/
 /vendor/
+/node_modules/

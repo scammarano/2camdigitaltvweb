@@ -1,29 +1,34 @@
-# Evolución a actualizaciones desde GitHub
+# Ruta de migración: actualizaciones del portal desde GitHub
 
-## Estado actual
-El repositorio `scammarano/2camdigitaltvweb` es PRIVADO y se dedica exclusivamente al código web. Esta primera estructura de gestión no constituye todavía una copia de la instalación actual ni habilita despliegues.
+## Objetivo
 
-## Fuente canónica
-Importar/revisar el código de la web v0.4.17 y compararlo con el servidor actual. Ninguna actualización podrá instalarse solo a partir de un repositorio parcial.
+Desarrollar y versionar únicamente el portal `scammarano/2camdigitaltvweb` (repositorio privado). A partir de una versión aprobada, permitir que SUPERADMIN pulse **Buscar/Instalar actualización desde GitHub**, eliminando la necesidad de subir archivos ZIP manualmente. Como alternativa futura, publicación automática mediante GitHub Actions con aprobación manual para producción.
 
-## Publicar desde GitHub (diseño)
-1. Se valida código PHP/MySQL y lista de cambios en Actions.
-2. Se aprueba un tag inmutable `web-vX.Y.Z`.
-3. Una release incluye archivo interno firmado y manifiesto con SHA-256 por archivo, lista de migraciones, versión mínima y reversión.
-4. **SUPERADMIN** pulsa `Buscar actualizaciones en GitHub` dentro del portal.
-5. El portal usa credenciales READ-ONLY para el repositorio privado, almacenadas fuera del webroot (no en GitHub ni en logs) y conecta por HTTPS.
-6. Verifica firma del release/manifiesto, hashes y versión; muestra vista previa de archivos y migraciones.
-7. Respalda MySQL y archivos, bloquea operaciones críticas, aplica los cambios preservando `config/`, `storage/`, `public/downloads/`, medios y APK.
-8. Verifica salud y versión, registra auditoría y habilita restauración al respaldo anterior.
+## Separación
 
-**El usuario NO descarga ni carga un ZIP manualmente.** El paquete intermedio es generado y consumido por las máquinas. El actualizador ZIP actual se conserva provisionalmente para recuperación.
+- Código web: este repositorio.
+- Android/APK: repositorios separados. El portal incluye el catálogo y la gestión de APK, no los binarios APK en Git.
+- Datos del servidor: MySQL, archivos multimedia, config, claves y respaldos NO se suben ni se sobrescriben.
 
-## Alternativa futura
-GitHub Actions puede desplegar por SSH a un entorno staging, probarlo y promoverlo a producción con aprobación explícita, cuando cPanel disponga de SSH y podamos garantizar backup/rollback. Nunca desplegar simplemente copiando archivos en caliente ni por FTP sin protección.
+## Propuesta de implementación segura
 
-## Pendientes para habilitar
-- Conciliar repositorio e instalación real.
-- Añadir endpoint y UI GitHub al updater PHP.
-- Configurar credencial de lectura de GitHub para repositorio privado.
-- Establecer firma y clave de release, sin divulgar la clave de firma privada actual.
-- Probar rollback y migraciones en staging.
+1. Fuente canónica: conciliar el código del repositorio con snapshot real y limpio del hosting.
+2. CI: lint PHP, pruebas del instalador y listas de exclusión.
+3. Publicación: tags anotados `web-vX.Y.Z`, paquete/release inmutable creado por Actions a partir del commit validado.
+4. Autenticación para repo privado: GitHub App o token de alcance mínimo read-only almacenado en configuración del SERVIDOR (fuera de webroot, nunca en GitHub ni logs).
+5. Botón en portal `Actualizar desde GitHub`: comprobar versión remota, mostrar cambios, dar opción de instalar después de respaldo y preflight.
+6. Integridad: release con manifiesto de hashes y firma validada contra clave pública fija del servidor; no confiar solo en TLS ni en nombre de tag.
+7. Instalar con el motor actual de backup+rollback y auditoría. El paquete puede ser interno en Actions; la persona no subirá ZIP ni usará FTP.
+8. Promoción: primero entorno de staging, luego producción; modo manual antes de activar autoaplicación.
+9. Mantener actualizador ZIP existente como vía de recuperación mientras se valida GitHub.
+
+## Alternativa
+
+GitHub Actions -> despliegue por SSH con clave restringida y aprobación manual de entorno protegido. Requiere acceso SSH en hosting y scripts transaccionales; evitar publicar por FTP o sobreescrituras directas sin respaldo.
+
+## Pendientes ANTES de activar
+
+- Confirmar la versión instalada y obtener snapshot actual de código sin datos sensibles.
+- Comprobar permisos y compatibilidad de hosting PHP/cPanel con GitHub API y/o SSH.
+- Decidir política de firma de releases sin divulgar la clave privada RSA ya existente.
+- Integrar botón de GitHub al actualizador existente y probar rollback.

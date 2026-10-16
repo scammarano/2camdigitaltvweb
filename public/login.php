@@ -1,0 +1,14 @@
+<?php
+require dirname(__DIR__).'/app/bootstrap.php';
+if(!is_file(ROOT.'/storage/installed.lock')){header('Location: install.php');exit;}
+$error='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ check_csrf();$row=dbone('SELECT id,tenant_id,name,email,role,password_hash FROM users WHERE email=?',[strtolower(trim($_POST['email']??''))]);
+ if($row && password_verify($_POST['password']??'',$row['password_hash'])){
+  session_regenerate_id(true);unset($row['password_hash']);$_SESSION['user']=$row;$_SESSION['active_tenant']=(int)$row['tenant_id'];log_event('login');redirect('index.php');
+ }
+ $error='Correo o contraseña incorrectos';log_event('login_failed');
+}
+?><!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acceso | Digital Signage</title><link rel="stylesheet" href="<?=h(url('assets/vendor/bootstrap.min.css'))?>"><link rel="stylesheet" href="<?=h(url('assets/css/signage.css'))?>?v=0.3.2"></head><body class="ds-login-body">
+<main class="ds-login-layout"><section class="ds-login-intro"><div class="ds-login-brand"><span class="ds-login-logo">▣</span><span>Digital <strong>Signage</strong></span></div><div class="ds-intro-content"><span class="ds-intro-tag">GESTIÓN CENTRALIZADA</span><h1>Tu contenido.<br><em>Todas tus pantallas.</em></h1><p>Administra imágenes, videos, listas y programaciones desde un solo lugar.</p><div class="ds-login-feature"><span>✓</span> Gestión por empresa y roles</div><div class="ds-login-feature"><span>✓</span> Programación por horario y orientación</div><div class="ds-login-feature"><span>✓</span> Reproductor web de pruebas</div></div><div class="ds-login-intro-foot">Digital Signage · Panel administrativo</div></section>
+<section class="ds-login-form-wrap"><div class="ds-login-form-card"><div class="ds-mobile-logo">Digital <strong>Signage</strong></div><div class="ds-login-kicker">BIENVENIDO</div><h2>Iniciar sesión</h2><p>Ingresa tus credenciales para continuar.</p><?php if($error):?><div class="alert alert-danger" role="alert"><?=h($error)?></div><?php endif;?><form method="post" autocomplete="on"><input type="hidden" name="_csrf" value="<?=h(csrf())?>"><div class="mb-3"><label class="form-label" for="email">Correo electrónico</label><input class="form-control" id="email" name="email" type="email" placeholder="usuario@empresa.com" autocomplete="username" required></div><div class="mb-4"><label class="form-label" for="password">Contraseña</label><input class="form-control" id="password" name="password" type="password" autocomplete="current-password" required></div><button class="btn btn-primary w-100" type="submit">Ingresar al portal <span aria-hidden="true">→</span></button></form><div class="ds-login-footer">Acceso seguro · HTTPS recomendado</div></div></section></main></body></html>
