@@ -101,7 +101,10 @@ function apk_repository_import(array $source,array $asset,string $envelope):arra
   if(!$current||!(int)$current['enabled']||(int)$current['revision']!==(int)$source['revision'])throw new RuntimeException('Conexión modificada durante la importación');
   $s=$pdo->prepare('SELECT * FROM app_releases WHERE platform=? AND version_code=? FOR UPDATE');$s->execute([$source['platform'],$m['version_code']]);$existing=$s->fetchAll();
   foreach($existing as $row)if(!hash_equals($row['sha256'],$m['sha256'])||$row['version_name']!==$m['version_name'])throw new RuntimeException('Conflicto: versión ya registrada con otro binario; no se reemplaza');
-  foreach($existing as $row)if($row['channel']==='debug'){$pdo->commit();return ['version'=>$m['version_name'],'imported'=>false];}
+  foreach($existing as $row)if($row['channel']==='debug'){
+   $pdo->prepare('INSERT IGNORE INTO apk_release_origins(release_id,platform,repository,asset_id,envelope_sha256,certificate_sha256,imported_at) VALUES(?,?,?,?,?,?,UTC_TIMESTAMP())')->execute([$row['id'],$source['platform'],$source['repository'],$asset['id'],hash_file('sha256',$envelope),$m['certificate_sha256']]);
+   $pdo->commit();return ['version'=>$m['version_name'],'imported'=>false];
+  }
   $key='upload:'.bin2hex(random_bytes(20)).'.apk';$owned=ds_apk_storage_path($key);
   if(!rename($temp,$owned))throw new RuntimeException('No se pudo guardar APK verificada');chmod($owned,0640);
   $notes=substr((string)($m['notes']??'APK importada desde GitHub'),0,5000);
@@ -122,7 +125,9 @@ function apk_sync_lock(){
  $lock=fopen($path,'c');if(!$lock||!flock($lock,LOCK_EX|LOCK_NB)){if($lock)fclose($lock);throw new RuntimeException('Ya hay una sincronización en curso; vuelve a intentar');}return $lock;
 }
 /** CLI scheduler and manual button share exactly this path. No device request starts a network import. */
-function apk_repositories_sync(bool $force=false):array {
+function apk_repositories_sync(bool $force=false,?callable $fetch=null,?callable $download=null):array {
+ $fetch??=static fn($path,$token,$repo)=>gh_http_json($path,$token,$repo);
+ $download??=static fn($token,$id,$path,$repo)=>gh_download_asset($token,$id,$path,$repo);
  $lock=apk_sync_lock();$results=[];
  try {
   foreach(dball('SELECT * FROM apk_repository_sources WHERE enabled=1 ORDER BY platform') as $source){
@@ -130,7 +135,7 @@ function apk_repositories_sync(bool $force=false):array {
    $platform=$source['platform'];$count=0;$latest='';$error=false;
    try {
     $token=apk_source_token($source);if($token===null)throw new RuntimeException('Falta token de lectura');
-    $releases=gh_http_json('/releases?per_page=30',$token,$source['repository']);
+    $releases=$fetch('/releases?per_page=30',$token,$source['repository']);
     $assets=apk_repository_candidates($releases,$platform);
     // Skip previously imported assets, but new/untrusted assets must still verify before acceptance.
     $attempts=0;
@@ -139,7 +144,7 @@ function apk_repositories_sync(bool $force=false):array {
      if($origin){if($latest==='')$latest=$origin['version_name'];continue;}
      if(++$attempts>3)break;
      $temp=tempnam(ROOT.'/storage','apk-envelope-');if($temp===false)throw new RuntimeException('No se pudo crear temporal');
-     try{gh_download_asset($token,$asset['id'],$temp,$source['repository']);if(filesize($temp)!==$asset['size'])throw new RuntimeException('Descarga incompleta');$r=apk_repository_import($source,$asset,$temp);$count+=(int)$r['imported'];if($latest===''||version_compare($r['version'],$latest,'>'))$latest=$r['version'];}finally{if(is_file($temp))unlink($temp);}
+     try{$download($token,$asset['id'],$temp,$source['repository']);if(filesize($temp)!==$asset['size'])throw new RuntimeException('Descarga incompleta');$r=apk_repository_import($source,$asset,$temp);$count+=(int)$r['imported'];if($latest===''||version_compare($r['version'],$latest,'>'))$latest=$r['version'];}finally{if(is_file($temp))unlink($temp);}
     }
     $message=$assets?($count.' APK nuevas importadas; catálogo actualizado'):'Sin paquetes APK firmados publicados';
    }catch(Throwable $e){$error=true;$incident=bin2hex(random_bytes(6));$message='Error '.$incident.': '.($e instanceof PDOException?'Base de datos no disponible':substr($e->getMessage(),0,350));log_event('apk_repository_error',['platform'=>$platform,'incident'=>$incident,'type'=>get_class($e)]);}

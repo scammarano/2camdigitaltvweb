@@ -5,6 +5,9 @@ require dirname(__DIR__).'/app/mode_runtime.php';
 function expect(bool $v,string $why):void{if(!$v)throw new RuntimeException($why);}
 function rejects(callable $f):void{try{$f();}catch(RuntimeException $e){return;}throw new RuntimeException('Invalid configuration accepted');}
 $v=ds_config_defaults();expect(ds_config_validate($v)===$v,'Default roundtrip');
+expect(ds_config_validate(['update_channel'=>'beta'])['update_channel']==='stable','Legacy beta becomes stable-only');
+$channel=array_values(array_filter(ds_config_schema()['fields'],static fn($f)=>$f['key']==='update_channel'))[0];
+expect($channel['options']===['stable'=>'Solo estables','debug'=>'Estables y pruebas'],'Exactly two unified channel options');
 foreach([1,2,3,4] as $mode){$v['primary_mode']=$mode;expect(ds_config_validate($v)['primary_mode']===$mode,'Four modes');}
 $v['enabled_modes']=7;rejects(fn()=>ds_config_validate($v));$v=ds_config_defaults();
 $v['overlay_opacity']=101;rejects(fn()=>ds_config_validate($v));$v=ds_config_defaults();
