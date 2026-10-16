@@ -1,10 +1,10 @@
 {
-  "tag": "web-v0.4.22",
-  "source_commit": "c23877d23b8ded65052a8db9b9ce72f9c3b096e4",
-  "asset": "SIGNAGE_UPDATE_v0.4.22_APK_REPOSITORIOS_RSA.zip",
-  "sha256": "d2c8abecfd9b008791bb5e3c2cf041a0f681ae4ddebee91c3a76e3f2967531f8",
-  "title": "Digital Signage Web 0.4.22 · Repositorios APK y promoción a Estable",
-  "notes": "Importación de APK firmadas desde repositorios configurables de Digital Signage, Turnos y Sports. Buscar ahora, ejecutor Cron cada cinco minutos, estado UTC y errores visibles. Solo SUPERADMIN, tokens de lectura privados, validación RSA/identidad/hash. Importa en Pruebas; promoción manual a Estable conserva exactamente el mismo binario. Incluye APK 0.4.16 con Solo estables / Estables y pruebas, cuatro modos, formatos centrales no editables, HUD y Sports LAN. ZIP acumulativo desde web 0.4.16. Activación en hosting: instalar ZIP, configurar/activar conexiones y Cron; NO se ha desplegado automáticamente en hosting ni instalado físicamente en Fire Stick. Turnos/Sports requieren sus propias entregas firmadas e integración de actualizador; no se anuncian APK inexistentes. Firma permanente de Android y autoridad RSA verificadas offline, sin claves privadas en GitHub. ACK formal v2 y prueba física pendientes. ZIP SHA-256: d2c8abecfd9b008791bb5e3c2cf041a0f681ae4ddebee91c3a76e3f2967531f8",
+  "tag": "web-v0.4.23",
+  "source_commit": "f4d219b85388a41f68cbf5f8301b15361a0c712b",
+  "asset": "SIGNAGE_UPDATE_v0.4.23_GITHUB_PUBLICO_RSA.zip",
+  "sha256": "3f80588e7297d4f3b47cff9f328532597700dcf999c4bde7423206b1f2cca955",
+  "title": "Digital Signage Web 0.4.23 · GitHub público sin token",
+  "notes": "Acceso Público sin token en actualizador web y repositorios APK. Se puede volver a privado con token sin borrar catálogo ni historial; el modo público no envía credenciales guardadas. Continúan firma RSA, SHA-256 y promoción manual a Estable. Transporte público real de metadatos y asset probado en CI, junto con importación privada autenticada, migración idempotente, instalación RSA y respaldo. Actualización acumulativa desde web 0.4.16. La APK sigue en 0.4.16-debug, sin cambios. Digital Signage publica sus assets actualmente en scammarano/2camdigitaltvweb: hacer público solo el repositorio Android no vuelve públicos esos assets. Instalar este ZIP desde la web antes de seleccionar el nuevo modo. No se ha desplegado en hosting ni cambiado la visibilidad de repositorios. ZIP SHA-256: 3f80588e7297d4f3b47cff9f328532597700dcf999c4bde7423206b1f2cca955",
   "android": {
     "asset": "2Cam_Digital_Signage_v0.4.16_DEBUG.apk",
     "sha256": "6df212f43a5eee1e2072b4dcb01a8b2258d4f541b5d13780bd1215a67653f7ae",
