@@ -21,6 +21,12 @@
  for(var j=0;j<modals.length;j++){
   if(modals[j].parentElement!==document.body)document.body.appendChild(modals[j]);
  }
+ // Open only a server-rendered configuration modal; the fragment grants no access.
+ var configId=window.location.hash.slice(1);
+ if(/^cfg[1-9][0-9]*$/.test(configId) && window.bootstrap && bootstrap.Modal){
+  var configModal=document.getElementById(configId);
+  if(configModal && configModal.classList.contains('modal'))bootstrap.Modal.getOrCreateInstance(configModal).show();
+ }
  var cells=document.querySelectorAll('.table td');
  for(var k=0;k<cells.length;k++)if(cells[k].querySelector('button, a.btn'))cells[k].classList.add('ds-row-actions');
  var cards=document.querySelectorAll('.card.table-responsive');

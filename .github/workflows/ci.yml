@@ -58,5 +58,8 @@ jobs:
           extensions: pdo_mysql
       - name: Configure isolated database and verify tenant isolation
         run: |
-          php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
+          php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
           php tests/config_tenant_test.php
+          php tests/device_crud_test.php forged
+          php tests/device_crud_test.php identity
+          php tests/device_crud_test.php foreign
