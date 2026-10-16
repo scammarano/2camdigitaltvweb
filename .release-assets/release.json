@@ -1,12 +1,14 @@
 {
-  "tag": "web-v0.4.20",
-  "source_commit": "1bbb091a62fa01df3360776342f2497ce3d7979c",
-  "asset": "SIGNAGE_UPDATE_v0.4.20_FORMATOS_CENTRALES_RSA.zip",
-  "sha256": "8fbe5b9f6169237dffe20c9de3a16455a3e61363b9bb566f6d6df388362271d3",
+  "tag": "web-v0.4.21",
+  "source_commit": "d5e7de726b451a1d9f02ea6a93f4d5f15ac652af",
+  "asset": "SIGNAGE_UPDATE_v0.4.21_DUPLICAR_PLAYLISTS_RSA.zip",
+  "sha256": "d6622b22e2fbed9ff8cf8389bcfc559317548d280a349d322b7d1fda55601f74",
   "android": {
     "asset": "2Cam_Digital_Signage_v0.4.15_DEBUG.apk",
     "sha256": "0599882f2c315160f90925145f59e1eb715a48a26c57dde7a45499588f8d48c5",
     "source_commit": "a6bfc07aafe6046924cad40a1cafefcacdb966be",
     "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a"
-  }
+  },
+  "title": "Digital Signage Web 0.4.21 — Duplicar playlists y copiar entre empresas",
+  "notes": "Listas de reproducción: nueva acción Duplicar / copiar a empresa con nombre y destino. Conserva orden, duración, repeticiones, transiciones y sublistas. En la misma empresa reutiliza los medios; entre empresas crea archivos y registros propios, con SHA-256 verificado. La original y sus asignaciones se conservan. No copia horarios ni asignaciones a pantallas.\n\nSolo SUPERADMIN puede copiar entre empresas. Conflictos de nombre con mensaje claro; ciclos, referencias cruzadas y copias incompletas se rechazan. Pruebas PHP8.1/MySQL8 del formulario real, aislamiento, copias y rollback superadas. Corregido también el filtro de empresa para SUPERADMIN.\n\nZIP acumulativo desde web 0.4.16, firmado RSA con respaldo previo del actualizador. No requiere nueva APK: se mantiene 0.4.15. No instala automáticamente en hosting.\n\nSHA-256 ZIP: d6622b22e2fbed9ff8cf8389bcfc559317548d280a349d322b7d1fda55601f74"
 }
