@@ -31,6 +31,7 @@ function ds_nav_groups():array {
         ],
         'Contenido y pantallas'=>[
             ['media.php','Biblioteca de medios','media.view','image'],
+            ['media-formats.php','Formatos de medios','media.view','image'],
             ['media-guide.php','Guía de formatos y tamaños','media.view','image'],
             ['playlists.php','Listas de reproducción','playlists.view','playlist'],
             ['devices.php','Pantallas','devices.view','screen'],
@@ -111,7 +112,7 @@ function page(string $title,string $content):void {
     echo '<aside class="ds-sidebar" id="ds-sidebar" aria-label="Navegación principal"><a href="'.h(url('index.php')).'" class="ds-brand"><span class="ds-brand-icon">'.ds_icon('screen',25).'</span><span class="ds-brand-text">Digital <strong>Signage</strong><small>PORTAL DE GESTIÓN</small></span></a><div class="ds-sidebar-scroll-controls"><button type="button" class="ds-sidebar-scroll-button" id="ds-nav-up" aria-label="Subir en el menú">▲ SUBIR</button><button type="button" class="ds-sidebar-scroll-button" id="ds-nav-down" aria-label="Bajar en el menú">▼ BAJAR</button></div><div class="ds-sidebar-inner" id="ds-sidebar-scroll" tabindex="0">'.$nav.'</div><div class="ds-sidebar-footer"><span class="ds-availability-dot"></span> Portal operativo <span class="ds-version">v'.h($v).'</span></div></aside>';
     echo '<div class="ds-main-wrap"><header class="ds-topbar"><button class="ds-menu-toggle" type="button" id="ds-menu-toggle" aria-label="Abrir menú" aria-controls="ds-sidebar" aria-expanded="false">'.ds_icon('menu',23).'</button><div class="ds-topbar-title">Digital Signage <span class="ds-topbar-divider">/</span> <span>'.h($title).'</span></div><div class="ds-topbar-right"><a href="'.h(url('app-downloads.php')).'" class="ds-top-download" title="Centro de descargas de aplicaciones">⬇ APK</a>'.$companyText.'<div class="ds-profile"><div class="ds-avatar">'.h(strtoupper(substr((string)$me['name'],0,1))).'</div><span class="ds-profile-name">'.h((string)$me['name']).'<small>'.h($role).'</small></span></div><a href="'.h(url('logout.php')).'" class="ds-logout" title="Cerrar sesión" aria-label="Cerrar sesión">'.ds_icon('logout',20).'</a></div></header>';
     echo '<main class="ds-main" id="main"><div class="ds-page-heading"><div><div class="ds-eyebrow">PANEL DE CONTROL <span>/</span> '.h($title).'</div><h1>'.h($title).'</h1><p>'.h($description).'</p></div></div><section class="ds-content" aria-label="Contenido">'.$content.'</section><footer class="ds-footer">Digital Signage · Portal de administración <span>v'.h($v).'</span></footer></main></div><div class="ds-backdrop" id="ds-backdrop" hidden></div></div>';
-    echo '<script src="'.$bootstrapJs.'"></script><script src="'.$js.'?v='.rawurlencode($v).'"></script></body></html>';
+    echo '<script src="'.h(url('assets/js/media-format-runtime.js')).'"></script><script src="'.h(url('media-formats-data.php')).'"></script><script src="'.$bootstrapJs.'"></script><script src="'.$js.'?v='.rawurlencode($v).'"></script></body></html>';
 }
 function render(string $title,callable $fn):void{ob_start();$fn();page($title,ob_get_clean());}
 function field(string $name,string $label,string $type='text',string $value=''):void {

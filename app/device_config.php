@@ -9,6 +9,7 @@ function ds_config_migrate_v1(array $input):array {
   if(isset($input['enabled_modes'])&&($input['enabled_modes']&4))$input['enabled_modes']|=8;
  }
  unset($input['smart_app'],$input['smart_header_pct']);
+ foreach(['overlay','queue','scoreboard'] as $m)unset($input[$m.'_width_pct'],$input[$m.'_height_pct']);
  if(($input['overlay_layout']??'')==='right')$input['overlay_layout']='side';
  return $input;
 }
@@ -39,6 +40,7 @@ function ds_config_form_input(array $post):array {
  }return ds_config_validate($out);
 }
 function ds_config_form(array $c,int $tid,int $did):void {
+ echo '<p class="alert alert-info">Las dimensiones se administran en Formatos de medios, no por pantalla. Requiere APK 0.4.15 o posterior.</p>';
  $group='';foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];
   if($group!==$f['group']){echo '<h5 class="border-bottom mt-4">'.h($f['group']).'</h5>';$group=$f['group'];}
   if($f['type']==='bool'){echo '<label class="d-block mb-2"><input type="checkbox" name="'.h($k).'"'.($c[$k]?' checked':'').'> '.h($f['label']).'</label>';continue;}

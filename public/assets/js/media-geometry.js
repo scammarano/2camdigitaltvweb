@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var screens={landscape:{w:1920,h:1080,name:'Pantalla horizontal'},portrait:{w:1080,h:1920,name:'Pantalla vertical'}};
-var zones={fullscreen:{name:'Pantalla completa',w:1,h:1},bottom:{name:'Barra inferior',w:1,h:.20},side:{name:'Barra lateral derecha',w:.40,h:1},half_horizontal:{name:'Media pantalla horizontal',w:1,h:.5},half_vertical:{name:'Media pantalla vertical',w:.5,h:1}};
+var zones=window.DSMediaFormats.zones;
 function target(ori,zone){var o=screens[ori]||screens.landscape,z=zones[zone]||zones.fullscreen;return {w:Math.round(o.w*z.w),h:Math.round(o.h*z.h),o:o,z:z};}
 function match(w,h,target){return w>0&&h>0&&Math.abs((w/h)/(target.w/target.h)-1)<=.04;}
 function checked(form,attr){return form.querySelector('input[name="'+attr+'"]:checked');}

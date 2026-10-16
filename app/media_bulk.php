@@ -61,6 +61,7 @@ function ds_bulk_media_action(string $action,array $ids,?int $visibleScope,int $
     $newFiles=[];$moves=[];$counter=0;$same=0;
     db()->beginTransaction();
     try{
+        ds_formats_current(true);
         $rows=ds_bulk_locked_records($ids,$visibleScope);
         $totalBytes=0;
         foreach($rows as $m){

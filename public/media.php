@@ -29,11 +29,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     if(!is_dir($dstDir)&&!mkdir($dstDir,0700,true)&&!is_dir($dstDir))throw new RuntimeException('No se pudo preparar el almacenamiento de la empresa destino');
     db()->beginTransaction();$moved=false;
     try{
+      ds_formats_lock_geometry($ori,$layout,$w,$h);
       if(!rename($src,$dst))throw new RuntimeException('No se pudo mover el medio a la empresa destino');$moved=true;
       execsql('UPDATE media SET tenant_id=?,name=?,orientation=?,layout_type=?,width_px=?,height_px=? WHERE id=? AND tenant_id=?',[$target,$name,$ori,$layout,$w,$h,$id,$old]);
       db()->commit();
     }catch(Throwable $e){if(db()->inTransaction())db()->rollBack();if($moved&&!rename($dst,$src))log_event('media_transfer_restore_failed',['id'=>$id]);throw $e;}
-   }else execsql('UPDATE media SET name=?,orientation=?,layout_type=?,width_px=?,height_px=? WHERE id=? AND tenant_id=?',[$name,$ori,$layout,$w,$h,$id,$old]);
+   }else {db()->beginTransaction();try{ds_formats_lock_geometry($ori,$layout,$w,$h);execsql('UPDATE media SET name=?,orientation=?,layout_type=?,width_px=?,height_px=? WHERE id=? AND tenant_id=?',[$name,$ori,$layout,$w,$h,$id,$old]);db()->commit();}catch(Throwable $e){if(db()->inTransaction())db()->rollBack();throw $e;}}
    log_event('media_edited',['id'=>$id,'old_company'=>$old,'company'=>$target]);$ok='Medio editado';
   }elseif($action==='upload'){
    // Orientation is the target DISPLAY, not the physical shape of the uploaded artwork.
@@ -71,6 +72,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    db()->beginTransaction();
    try {
     foreach($prepared as $item){
+     ds_formats_lock_geometry($ori,$layout,$item['w'],$item['h']);
      $stored=bin2hex(random_bytes(20));$path=$dir.'/'.$stored;
      if(!move_uploaded_file($item['tmp'],$path))throw new RuntimeException('No se pudo guardar «'.$item['original'].'».');
      $created[]=$path;
@@ -116,7 +118,7 @@ if(!isset($sorts[$fSort]))$fSort='newest';
 if(!in_array($fOrder,['asc','desc'],true))$fOrder='desc';
 $rows=dball('SELECT m.*,t.name AS company_name FROM media m JOIN tenants t ON t.id=m.tenant_id WHERE '.$where.' ORDER BY '.$sorts[$fSort].' '.strtoupper($fOrder).', m.id DESC',$params);
 render('Biblioteca de medios',function()use($rows,$error,$ok,$query,$fOri,$fLayout,$fType,$scope,$fMinMb,$fMaxMb,$fWidth,$fHeight,$fSort,$fOrder){
- echo '<link rel="stylesheet" href="'.h(url('assets/css/media-geometry.css')).'?v=049"><link rel="stylesheet" href="'.h(url('assets/css/media-bulk.css')).'?v=014"><link rel="stylesheet" href="'.h(url('assets/css/media-library-visual.css')).'?v=014"><script defer src="'.h(url('assets/js/media-geometry.js')).'?v=049"></script><script defer src="'.h(url('assets/js/media-bulk.js')).'?v=014"></script><link rel="stylesheet" href="'.h(url('assets/css/media-import-wizard.css')).'?v=015"><script defer src="'.h(url('assets/js/media-import-wizard.js')).'?v=015"></script>';
+ echo '<link rel="stylesheet" href="'.h(url('assets/css/media-geometry.css')).'?v=0420"><link rel="stylesheet" href="'.h(url('assets/css/media-bulk.css')).'?v=014"><link rel="stylesheet" href="'.h(url('assets/css/media-library-visual.css')).'?v=014"><script defer src="'.h(url('assets/js/media-geometry.js')).'?v=0420"></script><script defer src="'.h(url('assets/js/media-bulk.js')).'?v=014"></script><link rel="stylesheet" href="'.h(url('assets/css/media-import-wizard.css')).'?v=0420"><script defer src="'.h(url('assets/js/media-import-wizard.js')).'?v=0420"></script>';
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
  if(can('media.edit')){
    echo '<div class="ds-actions"><button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#upload">+ Cargar medios (asistente)</button> <a class="btn btn-outline-primary" href="'.h(url('media-guide.php')).'">Guía visual: 10 tamaños</a></div>';

@@ -64,3 +64,4 @@ jobs:
           php tests/device_crud_test.php identity
           php tests/device_crud_test.php foreign
           php tests/updater_roundtrip_test.php
+          php tests/media_formats_test.php

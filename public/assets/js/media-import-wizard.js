@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 var screens={landscape:{name:'Pantalla horizontal',w:1920,h:1080},portrait:{name:'Pantalla vertical',w:1080,h:1920}};
-var zones={fullscreen:{name:'Pantalla completa',w:1,h:1},bottom:{name:'Barra inferior',w:1,h:.20},side:{name:'Barra lateral derecha',w:.40,h:1},half_horizontal:{name:'Media pantalla horizontal',w:1,h:.5},half_vertical:{name:'Media pantalla vertical',w:.5,h:1}};
+var zones=window.DSMediaFormats.zones;
 var allowed=['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','video/quicktime'];
 var sizeLimit=40*1048576;
 function target(o,z){var screen=screens[o]||screens.landscape,zone=zones[z]||zones.fullscreen;return {w:Math.round(screen.w*zone.w),h:Math.round(screen.h*zone.h),screen:screen,zone:zone};}

@@ -57,7 +57,7 @@
  }
  function next(){index++;if(index>=items.length)refresh();else show();}
  async function refresh(){if(refreshing||!token)return;refreshing=true;try{
-   const manifest=await api('manifest');const playback=manifest.playback||{source:'none',items:[]};items=playback.items||[];index=0;
+   const manifest=await api('manifest');window.DSApplyMediaFormats(manifest.media_formats||{bottom_height_pct:20,side_width_pct:40});const playback=manifest.playback||{source:'none',items:[]};items=playback.items||[];index=0;
    source=playback.source==='schedule'?'Programación horaria':playback.source==='default'?'Lista predeterminada':'Sin lista asignada';
    orientation=manifest.orientation||'landscape';state.textContent=(manifest.device_name||'Pantalla')+' · '+source+' · '+items.length+' medios';
    await show();

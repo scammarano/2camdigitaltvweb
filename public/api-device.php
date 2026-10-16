@@ -4,7 +4,7 @@ require dirname(__DIR__).'/app/bootstrap.php';
 require_once ROOT.'/app/domain.php';
 require_once ROOT.'/app/playback.php';
 require_once ROOT.'/app/mode_runtime.php';
-require_once ROOT.'/app/device_config.php';
+require_once ROOT.'/app/device_config.php';require_once ROOT.'/app/media_formats.php';
 header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
 function api_out(array $data,int $code=200):never {http_response_code($code);echo json_encode($data,JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);exit;}
 function req_payload():array {$raw=file_get_contents('php://input');if(strlen($raw)>16384)api_out(['error'=>'Solicitud demasiado grande'],413);$p=json_decode($raw?:'{}',true);return is_array($p)?$p:[];}
@@ -98,7 +98,7 @@ try {
       'mode'=>(int)$d['mode'],'active_mode'=>$currentMode,'timezone'=>$now->getTimezone()->getName(),
       'server_local_time'=>$now->format('Y-m-d H:i:s'),'server_epoch_ms'=>(int)round(microtime(true)*1000),
       'mode_blocks'=>$modeBlocks,'device_options'=>$opts,'schedules'=>$all,'fallback'=>$fallback,'playback'=>$selected,
-      'playlist_catalog'=>(object)$catalog,'live'=>live_panel($tid,$did)]);
+      'media_formats'=>ds_formats_current(),'playlist_catalog'=>(object)$catalog,'live'=>live_panel($tid,$did)]);
   }
   api_out(['error'=>'Operación no encontrada'],404);
 } catch(Throwable $e){$error=fault($e,'api_device');api_out(['error'=>$error],500);}

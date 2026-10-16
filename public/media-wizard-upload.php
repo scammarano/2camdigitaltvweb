@@ -67,6 +67,7 @@ try {
     $moved=false;
     db()->beginTransaction();
     try {
+        ds_formats_lock_geometry($orientation,$layout,$w,$h);
         if(!move_uploaded_file($temp,$dest))throw new RuntimeException('No fue posible guardar este archivo.');
         $moved=true;
         @chmod($dest,0600);

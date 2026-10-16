@@ -37,7 +37,7 @@ function assert_unlinked_before_transfer(string $table,int $id,int $old):void{
         if(dbone('SELECT id FROM schedules WHERE tenant_id=? AND device_id=? LIMIT 1',[$old,$id]))throw new RuntimeException('La pantalla tiene programaciones. Elimínalas o reasígnalas antes de transferir la pantalla a otra empresa.');
     }
 }
-function layouts():array{return ['fullscreen'=>'Pantalla completa','bottom'=>'Barra inferior (20% alto)','side'=>'Barra lateral derecha (40% ancho)','half_horizontal'=>'Media pantalla horizontal (50%)','half_vertical'=>'Media pantalla vertical (50%)'];}
+function layouts():array{return ['fullscreen'=>'Pantalla completa','bottom'=>'Franja inferior','side'=>'Franja lateral derecha','half_horizontal'=>'Media pantalla horizontal (50%)','half_vertical'=>'Media pantalla vertical (50%)'];}
 function orientations():array{return ['landscape'=>'Pantalla horizontal','portrait'=>'Pantalla vertical','any'=>'Ambas pantallas (indiferente)'];}
 function transitions():array{return ['fade'=>'Fundido suave','slide-left'=>'Deslizar izquierda','slide-right'=>'Deslizar derecha','zoom'=>'Zoom suave','cut'=>'Corte inmediato'];}
 function safe_transition(string $raw,string $default='fade'):string{return isset(transitions()[$raw])?$raw:$default;}
