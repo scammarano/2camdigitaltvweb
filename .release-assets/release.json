@@ -1,10 +1,10 @@
 {
-  "tag": "web-v0.4.23",
-  "source_commit": "f4d219b85388a41f68cbf5f8301b15361a0c712b",
-  "asset": "SIGNAGE_UPDATE_v0.4.23_GITHUB_PUBLICO_RSA.zip",
-  "sha256": "3f80588e7297d4f3b47cff9f328532597700dcf999c4bde7423206b1f2cca955",
-  "title": "Digital Signage Web 0.4.23 · GitHub público sin token",
-  "notes": "Acceso Público sin token en actualizador web y repositorios APK. Se puede volver a privado con token sin borrar catálogo ni historial; el modo público no envía credenciales guardadas. Continúan firma RSA, SHA-256 y promoción manual a Estable. Transporte público real de metadatos y asset probado en CI, junto con importación privada autenticada, migración idempotente, instalación RSA y respaldo. Actualización acumulativa desde web 0.4.16. La APK sigue en 0.4.16-debug, sin cambios. Digital Signage publica sus assets actualmente en scammarano/2camdigitaltvweb: hacer público solo el repositorio Android no vuelve públicos esos assets. Instalar este ZIP desde la web antes de seleccionar el nuevo modo. No se ha desplegado en hosting ni cambiado la visibilidad de repositorios. ZIP SHA-256: 3f80588e7297d4f3b47cff9f328532597700dcf999c4bde7423206b1f2cca955",
+  "tag": "web-v0.4.24",
+  "source_commit": "b43da328cc1bb3bbbf6e285a5782eca3f0c149b3",
+  "asset": "SIGNAGE_UPDATE_v0.4.24_SPORTS_APK_RSA.zip",
+  "sha256": "4dfb1dec533ab68b18eff903518243ce770398a0f34eb3534fa77c5356838114",
+  "title": "Digital Signage Web 0.4.24 · Sports Control publicado",
+  "notes": "Sports Control 0.3.0 de Pruebas publicado en scammarano/2cam-sports, release sports-control-v0.3.0-test. Su APK original verificada con apksigner y aapt, minSdk23 para teléfono/tablet Android6+, firma original conservada. Este ZIP precarga paquete/certificado y modo público en la conexión Sports SOLO si era el marcador vacío y desactivado; no sobrescribe configuración del administrador ni activa la conexión. Activar Sports y Buscar ahora importa desde GitHub sin subir el APK manualmente. Importación pública REAL del sobre Sports probada en CI: RSA, identidad, hash, catálogo Pruebas, repetición sin duplicados y conservación de configuración. Incluye acceso público sin token y todo lo anterior desde web0.4.16. Digital Signage sigue en APK0.4.16. Turnos continúa privado y vacío, sin APK publicable. No se instala en hosting/dispositivos automáticamente. Sports0.3.0 no implementa aún búsqueda propia de actualizaciones del portal; firma permanente protegida para futuras compilaciones pendiente. ZIP SHA-256: 4dfb1dec533ab68b18eff903518243ce770398a0f34eb3534fa77c5356838114",
   "android": {
     "asset": "2Cam_Digital_Signage_v0.4.16_DEBUG.apk",
     "sha256": "6df212f43a5eee1e2072b4dcb01a8b2258d4f541b5d13780bd1215a67653f7ae",
