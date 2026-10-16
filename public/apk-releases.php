@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require __DIR__.'/_init.php';
 require_once ROOT.'/app/apk_releases.php';
+require_once ROOT.'/app/apk_repository.php';
 if(!is_super()){http_response_code(403);exit('Solo SUPERADMIN puede publicar APK');}
 $error='';$notice='';
 if($_SERVER['REQUEST_METHOD']==='POST') {
@@ -74,6 +75,9 @@ if($_SERVER['REQUEST_METHOD']==='POST') {
             }else{
                 $notice='APK v'.$version.' recibido correctamente. Está en borrador; puedes publicarlo desde el listado.';
             }
+        } elseif($action==='promote') {
+            apk_promote_stable((int)($_POST['release_id']??0));
+            $notice='Versión promovida a Estable con el mismo archivo, firma y SHA-256. La publicación de Pruebas se conserva.';
         } elseif($action==='edit') {
             $id=(int)($_POST['release_id']??0);
             $r=dbone('SELECT id FROM app_releases WHERE id=?',[$id]);if(!$r)throw new RuntimeException('Versión no encontrada');
@@ -124,6 +128,7 @@ $publicUrl=url('app-downloads.php');
 render('Versiones y descargas APK',function()use($releases,$error,$notice,$search,$state,$app,$publicUrl){
     if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';
     if($notice)echo '<div class="alert alert-success">'.h($notice).'</div>';
+    echo '<p><a class="btn btn-outline-primary" href="'.h(url('apk-repositories.php')).'">Repositorios y publicaciones · Buscar APK en GitHub</a></p>';
     echo '<div class="alert alert-info">Administras las tres aplicaciones Android desde un único catálogo público para todas las empresas. Las herramientas operativas de Turnos y Sports estarán en sus respectivos portales. Solo las versiones <strong>Publicadas</strong> se muestran en el sitio. En Fire TV, utiliza <strong>tv.php</strong> y el enlace directo terminado en <strong>.apk</strong>. Las compilaciones debug son exclusivamente para pruebas.</div>';
     echo '<div class="ds-actions"><a class="btn btn-outline-primary" href="'.h($publicUrl).'" target="_blank" rel="noopener">Abrir página pública de descargas ↗</a><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newApkModal">+ Publicar nueva versión</button></div>';
     echo '<form method="get" class="ds-filters"><div class="ds-filter-field"><label for="releaseQ">Buscar versión</label><input id="releaseQ" name="q" class="form-control" value="'.h($search).'" placeholder="Ej.: 0.4.3"></div><div class="ds-filter-field"><label for="releaseStatus">Estado</label><select id="releaseStatus" name="status" class="form-select"><option value="all">Todos</option>';
@@ -138,6 +143,9 @@ render('Versiones y descargas APK',function()use($releases,$error,$notice,$searc
       echo '<tr><td><strong>'.h(ds_apk_platforms()[$r['platform']]??'Aplicación desconocida').'</strong></td><td><strong>v'.h($r['version_name']).'</strong><br><small class="text-muted">Código '.(int)$r['version_code'].'</small></td><td>'.h(ds_apk_channels()[$r['channel']]??$r['channel']).'</td><td>'.h(ds_apk_statuses()[$r['status']]??$r['status']).'</td><td>API '.(int)$r['min_sdk'].'</td><td>'.h(ds_apk_human_size((int)$r['file_size'])).'</td><td>'.(int)$r['downloads'].'</td><td><code title="'.h($r['sha256']).'">'.h(substr($r['sha256'],0,13)).'…</code></td><td class="ds-row-actions">';
       echo '<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#releaseEdit'.$id.'">Editar</button> ';
       if($published)echo '<a href="'.h(url('downloads/'.ds_apk_static_basename($r))).'" class="btn btn-sm btn-outline-primary">APK</a> ';
+      if($published&&$r['channel']==='debug'){
+        form_open();echo '<input type="hidden" name="release_id" value="'.$id.'"><input type="hidden" name="action" value="promote"><button class="btn btn-sm btn-outline-success" onclick="return confirm(\'¿Promover este mismo APK a Estable para los dispositivos que solo admiten estables?\')">Promover a Estable</button></form> ';
+      }
       form_open();echo '<input type="hidden" name="release_id" value="'.$id.'"><input type="hidden" name="action" value="'.($published?'retire':'publish').'">';
       echo '<button type="submit" class="btn btn-sm '.($published?'btn-outline-danger':'btn-outline-success').'">'.($published?'Retirar':'Publicar').'</button></form></td></tr>';
       ob_start();echo '<div class="modal fade" tabindex="-1" id="releaseEdit'.$id.'" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Editar notas · v'.h($r['version_name']).'</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body">';

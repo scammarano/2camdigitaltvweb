@@ -15,7 +15,7 @@ try {
  $d=dbone('SELECT id,tenant_id FROM devices WHERE device_token_hash=?',[hash('sha256',$token)]);
  if(!$d)upd_out(['error'=>'Equipo no autorizado'],401);
  $channel=(string)($_GET['channel']??'stable');
- $options=['stable'=>['stable'],'beta'=>['stable','beta'],'debug'=>['stable','beta','debug']];
+ $options=['stable'=>['stable'],'beta'=>['stable','beta'],'debug'=>['stable','beta','debug']]; // beta retained only for legacy clients.
  if(!isset($options[$channel]))upd_out(['error'=>'Canal inválido'],400);
  $sdk=(int)($_GET['sdk']??19);if($sdk<19 || $sdk>999)upd_out(['error'=>'SDK inválido'],400);
  $rows=dball("SELECT id,version_name,version_code,channel,sha256,file_size,min_sdk,release_notes,storage_key,original_filename FROM app_releases WHERE platform='android-tv' AND status='published' AND min_sdk<=? ORDER BY version_code DESC,id DESC LIMIT 50",[$sdk]);

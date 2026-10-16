@@ -4,6 +4,7 @@ require_once __DIR__.'/bootstrap.php';
 function ds_config_schema():array {static $schema;return $schema??=json_decode(file_get_contents(__DIR__.'/config-schema.json'),true,32,JSON_THROW_ON_ERROR);}
 function ds_config_defaults():array {return array_column(ds_config_schema()['fields'],'default','key');}
 function ds_config_migrate_v1(array $input):array {
+ if(($input['update_channel']??'')==='beta')$input['update_channel']='stable'; // Conservative legacy migration.
  if(($input['smart_app']??'')==='scoreboard'){
   if(($input['primary_mode']??0)==3)$input['primary_mode']=4;
   if(isset($input['enabled_modes'])&&($input['enabled_modes']&4))$input['enabled_modes']|=8;

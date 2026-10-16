@@ -69,3 +69,4 @@ jobs:
           php tests/playlist_page_test.php view
           php tests/playlist_page_test.php copy
           php tests/playlist_page_test.php forbidden
+          php tests/apk_repository_test.php

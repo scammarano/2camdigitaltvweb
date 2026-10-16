@@ -54,6 +54,7 @@ function ds_nav_groups():array {
             ['github-updates.php','Actualizar desde GitHub','updates.manage','update'],
             ['updates.php','Actualizaciones ZIP (respaldo)','updates.manage','update'],
             ['apk-releases.php','Publicar y administrar APK','updates.manage','update'],
+            ['apk-repositories.php','Repositorios y publicaciones APK','updates.manage','update'],
             ['backups.php','Respaldos','updates.manage','backup'],
             ['diagnostics.php','Diagnóstico','updates.manage','health'],
             ['upgrade.php','Revisión / migración','updates.manage','health']

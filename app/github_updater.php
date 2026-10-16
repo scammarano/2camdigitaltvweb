@@ -43,14 +43,15 @@ function gh_token_remove():void {
     if(is_file($file) && !unlink($file))throw new RuntimeException('No fue posible quitar el token almacenado.');
 }
 /** Fixed host and path: no user-supplied URLs or repository names. */
-function gh_api_url(string $path):string {
+function gh_api_url(string $path,string $repository=DS_GITHUB_REPO):string {
+    if(!preg_match('#^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}/[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$#D',$repository))throw new RuntimeException('Repositorio GitHub inválido');
     if($path!=='' && (!preg_match('#^/[A-Za-z0-9_.?=&/\-]+$#D',$path) || str_contains($path,'..'))){
         throw new RuntimeException('Ruta GitHub no permitida.');
     }
-    return DS_GITHUB_API.$path;
+    return 'https://api.github.com/repos/'.$repository.$path;
 }
-function gh_http_json(string $path,string $token):array {
-    $url=gh_api_url($path);
+function gh_http_json(string $path,string $token,string $repository=DS_GITHUB_REPO):array {
+    $url=gh_api_url($path,$repository);
     $headers=[
         'Authorization: Bearer '.$token,
         'Accept: application/vnd.github+json',
@@ -154,12 +155,12 @@ function gh_asset_allowed_redirect(string $url):bool {
     return true;
 }
 /** Stream binary to a private tempfile. Never forward the PAT to a redirect host. */
-function gh_download_asset(string $token,int $assetId,string $target):int {
+function gh_download_asset(string $token,int $assetId,string $target,string $repository=DS_GITHUB_REPO):int {
     if($assetId<1)throw new RuntimeException('Identificador de APK/paquete inválido.');
     if(!function_exists('curl_init') && !filter_var(ini_get('allow_url_fopen'),FILTER_VALIDATE_BOOLEAN)){
         throw new RuntimeException('El hosting requiere PHP cURL o allow_url_fopen para descargar releases privadas.');
     }
-    $url=gh_api_url('/releases/assets/'.$assetId);
+    $url=gh_api_url('/releases/assets/'.$assetId,$repository);
     $totalRedirects=0;
     do{
         if(!gh_asset_allowed_redirect($url))throw new RuntimeException('GitHub intentó redirigir a un destino no permitido.');
