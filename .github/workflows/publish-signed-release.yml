@@ -48,3 +48,4 @@ jobs:
           php tests/config_tenant_test.php
           php tests/github_public_transport_test.php
           php tests/apk_repository_live_test.php
+          php tests/apk_sports_live_test.php

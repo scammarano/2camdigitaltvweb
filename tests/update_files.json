@@ -15,6 +15,7 @@
   "database/migrations/0.4.20.php",
   "database/migrations/0.4.22.php",
   "database/migrations/0.4.23.php",
+  "database/migrations/0.4.24.php",
   "public/api-app-update.php",
   "public/api-device-config.php",
   "public/api-device.php",
