@@ -1,0 +1,14 @@
+[
+  "app/config-schema.json",
+  "app/device_config.php",
+  "app/mode_runtime.php",
+  "database/migrations/0.4.19.php",
+  "public/api-device-config.php",
+  "public/api-device.php",
+  "public/assets/js/signage.js",
+  "public/device-manager.php",
+  "public/device-options.php",
+  "public/devices.php",
+  "public/mode-schedules.php",
+  "version.txt"
+]

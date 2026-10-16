@@ -55,7 +55,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-          extensions: pdo_mysql
+          extensions: pdo_mysql, zip, openssl
       - name: Configure isolated database and verify tenant isolation
         run: |
           php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
@@ -63,3 +63,4 @@ jobs:
           php tests/device_crud_test.php forged
           php tests/device_crud_test.php identity
           php tests/device_crud_test.php foreign
+          php tests/updater_roundtrip_test.php
