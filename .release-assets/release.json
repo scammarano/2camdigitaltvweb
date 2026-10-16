@@ -1,0 +1,12 @@
+{
+  "tag": "web-v0.4.20",
+  "source_commit": "1bbb091a62fa01df3360776342f2497ce3d7979c",
+  "asset": "SIGNAGE_UPDATE_v0.4.20_FORMATOS_CENTRALES_RSA.zip",
+  "sha256": "8fbe5b9f6169237dffe20c9de3a16455a3e61363b9bb566f6d6df388362271d3",
+  "android": {
+    "asset": "2Cam_Digital_Signage_v0.4.15_DEBUG.apk",
+    "sha256": "0599882f2c315160f90925145f59e1eb715a48a26c57dde7a45499588f8d48c5",
+    "source_commit": "a6bfc07aafe6046924cad40a1cafefcacdb966be",
+    "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a"
+  }
+}
