@@ -72,8 +72,36 @@ function ds_config_for_device(int $deviceId,int $tid):array {
  $defaults=ds_config_defaults();$defaults['primary_mode']=(int)($d['mode']??1);
  return ['revision'=>0,'settings'=>ds_config_validate($defaults),'changed_at'=>null];
 }
+function ds_mode_layout(array $c,int $mode):string {
+ return match($mode){2=>match($c['overlay_layout']){'top'=>'bottom','left'=>'side',default=>$c['overlay_layout']},3=>$c['queue_layout'],4=>$c['scoreboard_layout'],default=>'fullscreen'};
+}
+function ds_mode_playlist(array $c,int $mode):int {
+ return $mode===1?$c['signage_playlist_id']:$c[match($mode){2=>'overlay',3=>'queue',default=>'scoreboard'}.'_playlist_'.ds_mode_layout($c,$mode)];
+}
+function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
+ require_once __DIR__.'/domain.php';
+ if($mode<1||$mode>4||!($c['enabled_modes']&(1<<($mode-1))))throw new RuntimeException('El modo no está habilitado');
+ $layout=ds_mode_layout($c,$mode);$id=ds_mode_playlist($c,$mode);$ids=$id>0?[$id]:[];
+ if(!$ids&&$mode===1){
+  $device=dbone('SELECT active_playlist_id FROM devices WHERE id=? AND tenant_id=?',[$did,$tid]);
+  if(!empty($device['active_playlist_id']))$ids[]=(int)$device['active_playlist_id'];
+  foreach(dball('SELECT COALESCE(si.playlist_id,s.playlist_id) playlist_id FROM schedules s LEFT JOIN schedule_items si ON si.schedule_id=s.id AND si.tenant_id=s.tenant_id WHERE s.device_id=? AND s.tenant_id=?',[$did,$tid]) as $r)$ids[]=(int)$r['playlist_id'];
+ }
+ foreach(array_unique($ids) as $pid){
+  $list=dbone('SELECT p.id FROM playlists p JOIN devices d ON d.tenant_id=p.tenant_id WHERE p.id=? AND p.tenant_id=? AND d.id=? AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?)',[$pid,$tid,$did,$layout,'any']);
+  if(!$list)continue;
+  foreach(expanded($tid,$pid) as $item)if(($item['layout']??'fullscreen')===$layout && ($mode!==2||str_starts_with($item['mime'],'image/')))return;
+ }
+ $name=ds_config_schema()['modes'][(string)$mode];
+ throw new RuntimeException($name.': asigna una playlist compatible y con contenido para '.$layout.' antes de activar'.($mode===2?' (Overlay requiere imágenes)':''));
+}
+function ds_mode_activation_changed(array $old,array $new):bool {
+ $mode=$new['primary_mode'];return $old['primary_mode']!==$mode || ds_mode_layout($old,$mode)!==ds_mode_layout($new,$mode) || ds_mode_playlist($old,$mode)!==ds_mode_playlist($new,$mode);
+}
 function ds_config_publish(int $deviceId,int $tid,array $settings,int $expectedRevision,?int $uid=null):int {
  $clean=ds_config_validate($settings);ds_config_validate_playlists($clean,$tid,$deviceId);$json=ds_config_json($clean);
+ $before=ds_config_for_device($deviceId,$tid)['settings'];
+ if(ds_mode_activation_changed($before,$clean))ds_mode_require_playlist($clean,$tid,$deviceId,$clean['primary_mode']);
  $pdo=db();$pdo->beginTransaction();
  try {
   $stmt=$pdo->prepare('SELECT id FROM devices WHERE id=? AND tenant_id=? FOR UPDATE');$stmt->execute([$deviceId,$tid]);if(!$stmt->fetch())throw new RuntimeException('Pantalla no encontrada en la empresa');

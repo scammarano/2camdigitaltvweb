@@ -89,8 +89,9 @@ try {
     foreach([$wanted,is_array($actual)?$actual:[]] as $config)foreach($config as $key=>$id)if(str_contains($key,'playlist_')&&is_int($id)&&$id>0)$ids[$id]=true;
     $catalog=[];
     foreach(dball('SELECT id,name,orientation,layout_type FROM playlists WHERE tenant_id=? AND (orientation=? OR orientation=?) ORDER BY id',[$tid,$d['orientation'],'any']) as $list){
-      $items=[];if(isset($ids[(int)$list['id']])){$items=expanded($tid,(int)$list['id']);foreach($items as &$item)$item['url']=url('device-media.php?id='.$item['media_id']);unset($item);}
-      $catalog[(string)$list['id']]=['id'=>(int)$list['id'],'name'=>$list['name'],'layout'=>$list['layout_type'],'orientation'=>$list['orientation'],'items'=>$items];
+      $expanded=expanded($tid,(int)$list['id']);$count=count($expanded);$images=count(array_filter($expanded,fn($item)=>str_starts_with($item['mime'],'image/')));
+      $items=[];if(isset($ids[(int)$list['id']])){$items=$expanded;foreach($items as &$item)$item['url']=url('device-media.php?id='.$item['media_id']);unset($item);}
+      $catalog[(string)$list['id']]=['id'=>(int)$list['id'],'name'=>$list['name'],'layout'=>$list['layout_type'],'orientation'=>$list['orientation'],'item_count'=>$count,'image_count'=>$images,'items'=>$items];
     }
     $currentMode=resolve_mode($d,$modeBlocks,$now,(int)$opts['modes_enabled']);
     api_out(['schema_version'=>3,'device_id'=>$did,'device_name'=>$d['name'],'orientation'=>$d['orientation'],

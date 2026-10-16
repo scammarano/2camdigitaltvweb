@@ -1,6 +1,7 @@
 <?php
 /** Full-width grid + modal editor. Company-scoped mode program. */
 require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_permission('schedules.view');
+require_once ROOT.'/app/device_config.php';
 $error='';$ok='';
 function mode_name(int $value):string{return [1=>'Cartelera',2=>'Overlay',3=>'Turnos',4=>'Marcador deportivo'][$value]??'Inválido';}
 function mode_days(int $mask):string {
@@ -30,6 +31,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
      foreach([$from,$until] as $date)if($date!==''&&!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$date))throw new RuntimeException('Fecha inválida');
      if($from&&$until&&$from>$until)throw new RuntimeException('Vigencia incorrecta');
      $priority=max(-100,min(100,(int)($_POST['priority']??0)));$enabled=isset($_POST['enabled'])?1:0;
+     if($enabled)ds_mode_require_playlist(ds_config_for_device($device,$tenantId)['settings'],$tenantId,$device,$mode);
      if($act==='create')execsql('INSERT INTO device_mode_blocks(tenant_id,device_id,mode,days_mask,start_time,end_time,valid_from,valid_until,priority,enabled) VALUES(?,?,?,?,?,?,?,?,?,?)',[$tenantId,$device,$mode,$mask,$start,$end,$from?:null,$until?:null,$priority,$enabled]);
      else execsql('UPDATE device_mode_blocks SET tenant_id=?,device_id=?,mode=?,days_mask=?,start_time=?,end_time=?,valid_from=?,valid_until=?,priority=?,enabled=? WHERE id=? AND tenant_id=?',[$tenantId,$device,$mode,$mask,$start,$end,$from?:null,$until?:null,$priority,$enabled,$id,(int)$old['tenant_id']]);
      $ok='Bloque de modo guardado';
