@@ -21,7 +21,7 @@ function ds_config_validate(array $input):array {
   if($f['type']==='bool'){
    if(!is_bool($v))throw new RuntimeException('Tipo booleano requerido: '.$k);$out[$k]=$v;
   }elseif($f['type']==='enum'){
-   if(!array_key_exists((string)$v,$f['options']))throw new RuntimeException('Opción inválida: '.$k);
+   if((is_int($f['default'])?!is_int($v):!is_string($v))||!array_key_exists((string)$v,$f['options']))throw new RuntimeException('Opción inválida: '.$k);
    $out[$k]=is_int($f['default'])?(int)$v:(string)$v;
   }else{
    if(!is_int($v)||$v<$f['min']||$v>$f['max'])throw new RuntimeException('Fuera de rango: '.$k);$out[$k]=$v;
@@ -48,6 +48,7 @@ function ds_config_form(array $c,int $tid,int $did):void {
   if($f['type']==='playlist'){
    $options=[0=>($k==='signage_playlist_id'?'Programación del portal':'Sin asignar')];
    foreach(dball('SELECT p.id,p.name FROM playlists p JOIN devices d ON d.tenant_id=p.tenant_id WHERE d.id=? AND d.tenant_id=? AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?) ORDER BY p.id',[$did,$tid,$f['layout'],'any']) as $p)$options[(int)$p['id']]='#'.$p['id'].' · '.$p['name'];
+   if($c[$k]>0&&!isset($options[$c[$k]]))$options[$c[$k]]='#'.$c[$k].' · No disponible';
    echo sel($k,$options,(string)$c[$k]);
   }elseif($f['type']==='enum')echo sel($k,$f['options'],(string)$c[$k]);
   else echo '<input class="form-control mb-2" type="number" name="'.h($k).'" min="'.$f['min'].'" max="'.$f['max'].'" value="'.(int)$c[$k].'" required>';
