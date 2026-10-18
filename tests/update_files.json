@@ -77,6 +77,7 @@
   "public/mode-schedules.php",
   "public/player.php",
   "public/playlist-generator.php",
+  "public/playlist-guide.php",
   "public/playlists.php",
   "public/preview.php",
   "public/roles.php",
@@ -87,6 +88,5 @@
   "public/users.php",
   "public/assets/js/settings-tabs.js",
   "database/migrations/0.4.30.php",
-  "docs/CONFIG_PESTANAS_OVERLAY_v0430.md",
   "version.txt"
 ]

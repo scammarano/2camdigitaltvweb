@@ -11,7 +11,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $ok='Lista asignada sin duplicar archivos. Revisión '.$revision.' pendiente de confirmación de la APK.';
   }elseif($action==='create'){
    $name=trim($_POST['name']??'');$ori=$_POST['orientation']??'';$layout=$_POST['layout_type']??'';
-   if($name===''||!isset(layouts()[$layout])||!isset(orientations()[$ori]))throw new RuntimeException('Nombre/orientación/formato inválido');
+   if($name===''||!isset(layouts()[$layout])||!in_array($ori,['landscape','portrait'],true))throw new RuntimeException('Selecciona nombre, orientación de pantalla y formato');
    $effect=safe_transition((string)($_POST['transition_effect']??'fade'));$ms=safe_transition_ms($_POST['transition_ms']??600);
    execsql('INSERT INTO playlists(tenant_id,name,orientation,layout_type,transition_effect,transition_ms,mode_mask) VALUES(?,?,?,?,?,?,?)',[$target,$name,$ori,$layout,$effect,$ms,ds_playlist_mode_mask($_POST)]);
   }elseif($action==='duplicate'){
@@ -27,7 +27,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $name=trim($_POST['name']??'');if(!$name)throw new RuntimeException('Nombre requerido');
    $effect=safe_transition((string)($_POST['transition_effect']??'fade'));$ms=safe_transition_ms($_POST['transition_ms']??600);
    if($old!==$target)assert_unlinked_before_transfer('playlists',$id,$old);
-   $newMask=ds_playlist_mode_mask($_POST);$removed=((int)$oldRecord['mode_mask'])&(~$newMask);
+   $newMask=ds_playlist_mode_mask($oldRecord);$removed=((int)$oldRecord['mode_mask'])&(~$newMask);
    if($removed){
     foreach(dball('SELECT config_json FROM device_config_desired') as $r)foreach(json_decode($r['config_json'],true)?:[] as $key=>$value){
      $bit=str_starts_with($key,'overlay_playlist_')?2:(str_starts_with($key,'queue_playlist_')?4:(str_starts_with($key,'scoreboard_playlist_')?8:($key==='signage_playlist_id'?1:0)));
@@ -35,7 +35,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     }
     if(($removed&1)&&(dbone('SELECT id FROM devices WHERE active_playlist_id=? LIMIT 1',[$id])||dbone('SELECT id FROM schedules WHERE playlist_id=? LIMIT 1',[$id])||dbone('SELECT id FROM schedule_items WHERE playlist_id=? LIMIT 1',[$id])))throw new RuntimeException('La lista se usa como cartelera en pantallas o programación; reasígnala antes de quitar ese modo');
    }
-   execsql('UPDATE playlists SET tenant_id=?,name=?,transition_effect=?,transition_ms=?,mode_mask=? WHERE tenant_id=? AND id=?',[$target,$name,$effect,$ms,ds_playlist_mode_mask($_POST),$old,$id]);
+   execsql('UPDATE playlists SET tenant_id=?,name=?,transition_effect=?,transition_ms=?,mode_mask=? WHERE tenant_id=? AND id=?',[$target,$name,$effect,$ms,$newMask,$old,$id]);
   }else{
    $pid=(int)($_POST['playlist_id']??0);$parent=dbone('SELECT * FROM playlists WHERE id=? AND tenant_id=?',[$pid,$target]);if(!$parent)throw new RuntimeException('Lista inválida');
    if($action==='save_grid'){
@@ -97,7 +97,7 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
  if($createdCopy)echo '<a class="btn btn-primary mb-3" href="'.h(url('playlists.php?company='.$createdCopy['company'].'#playlist-'.$createdCopy['id'])).'">Ver copia en la empresa de destino</a>';
  if(can('playlists.edit'))echo '<a class="btn btn-primary mb-3" href="'.h(url('playlist-generator.php'.($scope?'?company='.$scope:''))).'">Generar listas automáticamente</a>';
- if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0);field('name','Nombre');echo ds_playlist_modes_form().'<label>Orientación</label>'.sel('orientation',orientations(),'landscape').'<label>Formato</label>'.sel('layout_type',layouts()).'<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
+ if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0).'<label>Orientación de la pantalla</label>'.sel('orientation',[''=>'Selecciona orientación','landscape'=>'Pantalla horizontal','portrait'=>'Pantalla vertical']).'<label>Formato de lista</label>'.sel('layout_type',[''=>'Selecciona formato']+layouts()).ds_playlist_modes_form();field('name','Nombre');echo '<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
  echo '<form method="get" class="ds-filters" aria-label="Filtros de listas">'.company_filter_control($scope).'<div class="ds-filter-field"><label>Nombre de lista</label><input type="search" name="q" class="form-control" value="'.h($query).'" placeholder="Buscar lista"></div><div class="ds-filter-field"><label>Orientación</label><select name="orientation" class="form-select"><option value="">Todas</option>';foreach(orientations() as $key=>$label)echo '<option value="'.h($key).'" '.($fOri===$key?'selected':'').'>'.h($label).'</option>';echo '</select></div><div class="ds-filter-field"><label>Formato</label><select name="layout" class="form-select"><option value="">Todos</option>';foreach(layouts() as $key=>$label)echo '<option value="'.h($key).'" '.($fLayout===$key?'selected':'').'>'.h($label).'</option>';echo '</select></div><div class="ds-filter-actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-outline-secondary" href="'.h(url('playlists.php')).'">Limpiar</a></div></form><p class="ds-filter-count">Listas encontradas: '.count($filtered).'</p>';
  if(!$filtered)echo '<div class="card ds-list-empty">No hay listas que coincidan con los filtros.</div>';
  foreach($filtered as $p){
