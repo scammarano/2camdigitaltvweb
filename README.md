@@ -2,7 +2,11 @@
 
 **Repositorio exclusivo del portal web PHP/MySQL.** Las aplicaciones Android, APK, medios de clientes, respaldos, claves privadas, credenciales y archivos runtime NO forman parte del repositorio.
 
-## Estado de esta base
+## Desarrollo actual
+
+Rama `feat/four-modes-parity-v0419`: web **0.4.29**, configuración central Turnos/Sports por empresa, generador de listas, modos de uso explícitos y separadores globales. Ver [alcance verificado, API y conexiones pendientes](docs/PORTAL_CENTRAL_v0429.md). El número de esta rama no acredita la versión instalada en el hosting.
+
+## Origen de esta base
 
 Código reconstruido a partir del portal completo v0.3.0 y los paquetes firmados incrementales hasta **v0.4.17**, más el código nuevo de integración GitHub v0.4.18. Esta reconstrucción NO prueba que el código sea idéntico al sitio en producción; debe cotejarse con un snapshot actual del servidor antes del primer despliegue.
 

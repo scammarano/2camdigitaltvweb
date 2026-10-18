@@ -31,3 +31,9 @@
 .idea/
 /vendor/
 /node_modules/
+
+# Ephemeral isolated CI identities and rendered fixtures
+/.*-http-fixture.json
+/.browser-session.json
+/public/_ui-*.html
+/test-results/

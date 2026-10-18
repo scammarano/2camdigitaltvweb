@@ -97,6 +97,7 @@ jobs:
           python3 tests/shared_service_http.py
           python3 tests/application_config_http.py
           node tests/playlist_editor_browser.cjs
+          node tests/portal29_browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

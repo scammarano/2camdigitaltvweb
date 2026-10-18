@@ -52,6 +52,7 @@ function ds_app_entity(int $tid,string $app,int $revision,array $input):int {
   ds_app_lock($tid,$app,$revision);$old=$id?dbone('SELECT * FROM application_entities WHERE id=? AND tenant_id=? AND app=? AND kind=?',[$id,$tid,$app,$kind]):null;
   if($id&&!$old)throw new RuntimeException('Registro de otra empresa o aplicación');
   if(($input['action']??'')==='delete'){
+   if(!$id||!$old)throw new RuntimeException('Registro no encontrado');
    if(dbone('SELECT id FROM application_entities WHERE parent_id=? LIMIT 1',[$id]))throw new RuntimeException('Primero elimina o reasigna los elementos dependientes');
    if(dbone("SELECT id FROM application_entities WHERE tenant_id=? AND app=? AND (JSON_UNQUOTE(JSON_EXTRACT(config_json,'$.counter_id'))=? OR JSON_UNQUOTE(JSON_EXTRACT(config_json,'$.tournament_id'))=? OR JSON_UNQUOTE(JSON_EXTRACT(config_json,'$.home_team_id'))=? OR JSON_UNQUOTE(JSON_EXTRACT(config_json,'$.away_team_id'))=?) LIMIT 1",[$tid,$app,(string)$id,(string)$id,(string)$id,(string)$id]))throw new RuntimeException('Otro elemento utiliza este registro; reasígnalo antes de eliminar');
    execsql('DELETE FROM application_entities WHERE id=? AND tenant_id=? AND app=?',[$id,$tid,$app]);
