@@ -97,7 +97,7 @@ function page(string $title,string $content):void {
         $links='';
         foreach($items as [$path,$label,$permission,$icon]) {
             if($permission!==null&&!can($permission))continue;
-            $active=$path===$current;
+            $active=$path===$current||($current==='applications.php'&&$path==='applications.php?app='.($_GET['app']??'turnos'));
             $links.='<a class="ds-nav-link'.($active?' active':'').'" href="'.h(url($path)).'"'.($active?' aria-current="page"':'').'>'.ds_icon($icon).'<span>'.h($label).'</span></a>';
         }
         if($links!=='')$nav.='<div class="ds-nav-group"><div class="ds-nav-label">'.h($group).'</div>'.$links.'</div>';
