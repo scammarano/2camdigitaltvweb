@@ -82,7 +82,7 @@ function ds_app_snapshot(int $tid,string $app,?int $deviceId=null):array {
  if($deviceId!==null){$binding=null;foreach($all as $e)if((int)$e['device_id']===$deviceId&&$e['kind']==='screen'&&(int)$e['enabled'])$binding=$e;
   if(!$binding)throw new RuntimeException('Pantalla sin asignación activa a esta aplicación');
   $parent=(int)$binding['parent_id'];$ids=[$parent=>true,(int)$binding['id']=>true];foreach($all as $e)if((int)$e['id']===$parent&&!empty($e['parent_id']))$ids[(int)$e['parent_id']]=true;
-  $all=array_values(array_filter($all,fn($e)=>$e['kind']!=='screen'&&$e['kind']!=='operator'&&$e['kind']!=='control'&&$e['kind']!=='kiosk'&&((int)$e['parent_id']===$parent||isset($ids[(int)$e['id']]))||(int)$e['id']===(int)$binding['id']));
+  $all=array_values(array_filter($all,fn($e)=>(int)$e['enabled']===1&&((!in_array($e['kind'],['screen','operator','control','kiosk'],true)&&((int)$e['parent_id']===$parent||isset($ids[(int)$e['id']])||($app==='sports'&&in_array($e['kind'],['team','tournament'],true)&&isset($ids[(int)$e['parent_id']]))))||(int)$e['id']===(int)$binding['id'])));
  }
  foreach($all as &$e){$e['id']=(int)$e['id'];$e['parent_id']=$e['parent_id']?(int)$e['parent_id']:null;$e['enabled']=(bool)$e['enabled'];$e['config']=json_decode($e['config_json'],true,16,JSON_THROW_ON_ERROR);unset($e['config_json'],$e['user_id']);}unset($e);
  return ['schema_version'=>1,'tenant_id'=>$tid,'application'=>$app,'revision'=>$c['revision'],'updated_at'=>$c['updated_at'],'settings'=>$c['settings'],'entities'=>$all,'runtime'=>['screen_configuration_consumer'=>'pending','remote_configuration_consumer'=>'pending','whatsapp_delivery'=>'not_connected']];

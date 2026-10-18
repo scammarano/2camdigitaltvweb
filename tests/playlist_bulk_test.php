@@ -7,7 +7,7 @@ $_SESSION['user']=['id'=>100,'tenant_id'=>1];$_SESSION['csrf']='bulk-fixture';
 $migration=require ROOT.'/database/migrations/0.4.27.php';$migration(db());$migration(db());
 ck27(ds_playlist_duration('0.1')===0.1&&ds_playlist_duration('0,1')===0.1,'Tenths parser');foreach(['0','0.01','1.11','-1','NaN'] as $bad)reject27(fn()=>ds_playlist_duration($bad));
 execsql("INSERT INTO playlists(tenant_id,name,orientation,layout_type) VALUES(1,'Batch fixture','landscape','bottom')");$pid=(int)db()->lastInsertId();
-$media=(int)dbone('SELECT id FROM media WHERE tenant_id=1 AND name LIKE ? LIMIT 1',['Separador blanco%'])['id'];
+$media=(int)dbone('SELECT id FROM media WHERE tenant_id IS NULL AND name LIKE ? LIMIT 1',['Separador blanco%'])['id'];
 foreach([10,20,30] as $pos)execsql("INSERT INTO playlist_items(tenant_id,playlist_id,kind,media_id,position,duration_seconds,repeat_count,transition_effect,transition_ms) VALUES(1,?,'media',?,?,0.1,2,'cut',0)",[$pid,$media,$pos]);
 $read=static fn()=>dball('SELECT * FROM playlist_items WHERE tenant_id=1 AND playlist_id=? ORDER BY position,id',[$pid]);
 $before=$read();$ids=array_map('intval',array_column($before,'id'));$stamp=ds_playlist_stamp($before);
