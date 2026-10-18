@@ -1,0 +1,8 @@
+{
+  "tag": "apk-v0.4.20-debug",
+  "source_commit": "7347db6f6121ea9280b751d6d37a2a21254326ab",
+  "source_run": 39127961957,
+  "sha256": "7e3ba66b974ed04f485f6d691a4b367acdff7e9ace018a4489f438c7434387c5",
+  "envelope_sha256": "ff681ad28302edb247ae241618c9d320179b664b48c014bb308c14221e7c319a",
+  "notes": "Solo APK: la web conserva 0.4.29. Importación en Pruebas, promoción manual a Estable. Requiere asignar la pantalla a una sala o pista en el portal 0.4.29+. Catálogo integrado; motor central de eventos, logos, controles remotos y WhatsApp siguen pendientes. No se ha instalado en hosting ni Fire físico. Detalles: https://github.com/scammarano/digital-signage-android/blob/7347db6f6121ea9280b751d6d37a2a21254326ab/docs/PORTAL_CONFIG_CONSUMER_v0420.md"
+}
