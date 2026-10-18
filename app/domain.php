@@ -22,6 +22,7 @@ function company_select(int $selected=0,string $attributes=''):string{
 function owned_edit_record(string $table,int $id):array{
     if(!in_array($table,['media','playlists','devices','schedules'],true)||$id<1)throw new RuntimeException('Registro inválido');
     $record=is_super()?dbone("SELECT * FROM $table WHERE id=?",[$id]):dbone("SELECT * FROM $table WHERE id=? AND tenant_id=?",[$id,tenant()]);
+    if($record && $table==='media' && $record['tenant_id']===null)throw new RuntimeException('Los separadores globales se reutilizan y no se modifican por empresa');
     if(!$record)throw new RuntimeException('Registro no encontrado o sin permiso en esta empresa');
     return $record;
 }

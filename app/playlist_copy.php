@@ -29,9 +29,9 @@ function ds_playlist_duplicate(int $sourceId,int $destination,string $name):arra
   if(dbone('SELECT id FROM playlists WHERE tenant_id=? AND name=?',[$destination,$name]))throw new RuntimeException('Ya existe una lista con ese nombre en la empresa de destino. Elige otro nombre.');
   $copyMedia=function(int $id)use(&$mediaMap,&$files,&$bytes,$destination,$sourceTenant):int {
    if(isset($mediaMap[$id]))return $mediaMap[$id];
-   $m=dbone('SELECT * FROM media WHERE id=? AND tenant_id=? FOR UPDATE',[$id,$sourceTenant]);
+   $m=dbone('SELECT * FROM media WHERE id=? AND (tenant_id=? OR is_shared=1) FOR UPDATE',[$id,$sourceTenant]);
    if(!$m)throw new RuntimeException('Un medio de la lista no existe o pertenece a otra empresa.');
-   if($destination===$sourceTenant)return $mediaMap[$id]=$id;
+   if((int)$m['is_shared']===1||$destination===$sourceTenant)return $mediaMap[$id]=$id;
    if(count($mediaMap)>=500)throw new RuntimeException('La copia supera 500 medios. Divide la lista.');
    $bytes+=(int)$m['size_bytes'];if($bytes>1073741824)throw new RuntimeException('La copia supera 1 GB. Divide la lista.');
    if(!preg_match('/^[a-f0-9]{40}$/D',(string)$m['filename']))throw new RuntimeException('Un medio utiliza un nombre de archivo antiguo/no seguro. Revisa su almacenamiento antes de copiarlo.');
@@ -61,7 +61,7 @@ function ds_playlist_duplicate(int $sourceId,int $destination,string $name):arra
    foreach(dball('SELECT * FROM playlist_items WHERE tenant_id=? AND playlist_id=? ORDER BY position,id FOR UPDATE',[$sourceTenant,$id]) as $item){
     if(++$itemsCopied>2000)throw new RuntimeException('La copia supera 2000 renglones.');
     if($item['kind']==='media'){
-     $m=dbone('SELECT orientation,layout_type FROM media WHERE id=? AND tenant_id=?',[(int)$item['media_id'],$sourceTenant]);if(!$m||!compatible($p,$m))throw new RuntimeException('La lista contiene un medio incompatible o de otra empresa.');
+     $m=dbone('SELECT orientation,layout_type FROM media WHERE id=? AND (tenant_id=? OR is_shared=1)',[(int)$item['media_id'],$sourceTenant]);if(!$m||!compatible($p,$m))throw new RuntimeException('La lista contiene un medio incompatible o de otra empresa.');
      $overrides=['media_id'=>$copyMedia((int)$item['media_id']),'child_playlist_id'=>null];
     }elseif($item['kind']==='playlist'){
      $child=dbone('SELECT orientation,layout_type FROM playlists WHERE id=? AND tenant_id=?',[(int)$item['child_playlist_id'],$sourceTenant]);if(!$child||!compatible($p,$child))throw new RuntimeException('La lista contiene una sublista incompatible o de otra empresa.');

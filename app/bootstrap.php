@@ -36,7 +36,7 @@ function permission_names():array{return [
  'companies.manage'=>'Empresas', 'users.manage'=>'Gestionar usuarios', 'roles.manage'=>'Gestionar roles',
  'media.view'=>'Ver medios','media.edit'=>'Administrar medios','playlists.view'=>'Ver listas','playlists.edit'=>'Administrar listas',
  'devices.view'=>'Ver pantallas','devices.edit'=>'Administrar pantallas','schedules.view'=>'Ver programaciones','schedules.edit'=>'Administrar programaciones',
- 'logs.view'=>'Consultar logs de empresa','updates.manage'=>'Actualizar plataforma','content.share'=>'Compartir medios y listas con otras empresas','devices.suspend'=>'Suspender o reactivar el servicio de pantallas'];}
+ 'logs.view'=>'Consultar logs de empresa','updates.manage'=>'Actualizar plataforma','content.share'=>'Compartir medios y listas con otras empresas','devices.suspend'=>'Suspender o reactivar el servicio de pantallas','turnos.view'=>'Ver configuración de Turnos','turnos.manage'=>'Administrar Turnos','sports.view'=>'Ver configuración de Sports','sports.manage'=>'Administrar Sports','integrations.manage'=>'Administrar conexiones API de Turnos y Sports'];}
 function permissions():array{
     $u=user();if(!$u)return [];
     if($u['role']==='superadmin')return array_keys(permission_names());

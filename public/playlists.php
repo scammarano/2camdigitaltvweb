@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/playlist_copy.php';require_once ROOT.'/app/playlist_editor.php';require_once ROOT.'/app/media_separator.php';require_permission('playlists.view');
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/playlist_copy.php';require_once ROOT.'/app/playlist_editor.php';require_once ROOT.'/app/media_separator.php';require_once ROOT.'/app/playlist_modes.php';require_permission('playlists.view');
 $t=tenant();$error='';$ok='';$createdCopy=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
@@ -9,7 +9,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $name=trim($_POST['name']??'');$ori=$_POST['orientation']??'';$layout=$_POST['layout_type']??'';
    if($name===''||!isset(layouts()[$layout])||!isset(orientations()[$ori]))throw new RuntimeException('Nombre/orientación/formato inválido');
    $effect=safe_transition((string)($_POST['transition_effect']??'fade'));$ms=safe_transition_ms($_POST['transition_ms']??600);
-   execsql('INSERT INTO playlists(tenant_id,name,orientation,layout_type,transition_effect,transition_ms) VALUES(?,?,?,?,?,?)',[$target,$name,$ori,$layout,$effect,$ms]);
+   execsql('INSERT INTO playlists(tenant_id,name,orientation,layout_type,transition_effect,transition_ms,mode_mask) VALUES(?,?,?,?,?,?,?)',[$target,$name,$ori,$layout,$effect,$ms,ds_playlist_mode_mask($_POST)]);
   }elseif($action==='duplicate'){
    $result=ds_playlist_duplicate((int)($_POST['playlist_id']??0),$target,(string)($_POST['copy_name']??''));
    $createdCopy=['company'=>$target,'id'=>$result['id']];
@@ -23,7 +23,15 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $name=trim($_POST['name']??'');if(!$name)throw new RuntimeException('Nombre requerido');
    $effect=safe_transition((string)($_POST['transition_effect']??'fade'));$ms=safe_transition_ms($_POST['transition_ms']??600);
    if($old!==$target)assert_unlinked_before_transfer('playlists',$id,$old);
-   execsql('UPDATE playlists SET tenant_id=?,name=?,transition_effect=?,transition_ms=? WHERE tenant_id=? AND id=?',[$target,$name,$effect,$ms,$old,$id]);
+   $newMask=ds_playlist_mode_mask($_POST);$removed=((int)$oldRecord['mode_mask'])&(~$newMask);
+   if($removed){
+    foreach(dball('SELECT config_json FROM device_config_desired') as $r)foreach(json_decode($r['config_json'],true)?:[] as $key=>$value){
+     $bit=str_starts_with($key,'overlay_playlist_')?2:(str_starts_with($key,'queue_playlist_')?4:(str_starts_with($key,'scoreboard_playlist_')?8:($key==='signage_playlist_id'?1:0)));
+     if(($removed&$bit)&&(int)$value===$id)throw new RuntimeException('La lista está asignada a ese modo en una pantalla. Reasígnala antes de deshabilitarlo.');
+    }
+    if(($removed&1)&&(dbone('SELECT id FROM devices WHERE active_playlist_id=? LIMIT 1',[$id])||dbone('SELECT id FROM schedules WHERE playlist_id=? LIMIT 1',[$id])||dbone('SELECT id FROM schedule_items WHERE playlist_id=? LIMIT 1',[$id])))throw new RuntimeException('La lista se usa como cartelera en pantallas o programación; reasígnala antes de quitar ese modo');
+   }
+   execsql('UPDATE playlists SET tenant_id=?,name=?,transition_effect=?,transition_ms=?,mode_mask=? WHERE tenant_id=? AND id=?',[$target,$name,$effect,$ms,ds_playlist_mode_mask($_POST),$old,$id]);
   }else{
    $pid=(int)($_POST['playlist_id']??0);$parent=dbone('SELECT * FROM playlists WHERE id=? AND tenant_id=?',[$pid,$target]);if(!$parent)throw new RuntimeException('Lista inválida');
    if($action==='save_grid'){
@@ -38,6 +46,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    }elseif($action==='add'){
     $choice=explode(':',(string)($_POST['choice']??''),2);$kind=$choice[0]??'';$id=(int)($choice[1]??0);
     if($kind==='separator'&&$id===0){$id=ds_media_white_separator($target,(string)$parent['orientation'],(string)$parent['layout_type']);$kind='media';}
+    elseif($kind==='separator'&&$id===1){require_permission('media.edit');$id=ds_global_separator((string)$parent['orientation'],(string)$parent['layout_type'],'#000000');$kind='media';}
     $table=$kind==='media'?'media':($kind==='playlist'?'playlists':null);if(!$table)throw new RuntimeException('Tipo inválido');
     $child=ds_content_record($table,$id,$target);if(!$child||!compatible($parent,$child))throw new RuntimeException('El contenido no tiene la orientación o el formato adecuados');
     if($kind==='playlist'&&!expanded($target,$id))throw new RuntimeException('La lista seleccionada está vacía. Añádele medios antes de insertarla.');
@@ -80,10 +89,11 @@ $media=dball('SELECT * FROM media WHERE '.$poolWhere.' ORDER BY name',$poolParam
 $filteredIds=array_map('intval',array_column($filtered,'id'));
 $items=$filteredIds?dball('SELECT i.*,p.name child_name,m.name media_name,m.mime media_mime FROM playlist_items i LEFT JOIN playlists p ON p.id=i.child_playlist_id LEFT JOIN media m ON m.id=i.media_id WHERE i.playlist_id IN ('.implode(',',array_fill(0,count($filteredIds),'?')).') ORDER BY i.playlist_id,i.position,i.id',$filteredIds):[];
 render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$error,$ok,$query,$fOri,$fLayout,$scope,$createdCopy){
- echo '<link rel="stylesheet" href="'.h(url('assets/css/playlist-editor.css')).'?v=0428"><script defer src="'.h(url('assets/js/playlist-editor.js')).'?v=0428"></script>';
+ echo '<link rel="stylesheet" href="'.h(url('assets/css/playlist-editor.css')).'?v=0429"><script defer src="'.h(url('assets/js/playlist-editor.js')).'?v=0429"></script>';
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
  if($createdCopy)echo '<a class="btn btn-primary mb-3" href="'.h(url('playlists.php?company='.$createdCopy['company'].'#playlist-'.$createdCopy['id'])).'">Ver copia en la empresa de destino</a>';
- if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0);field('name','Nombre');echo '<label>Orientación</label>'.sel('orientation',orientations(),'landscape').'<label>Formato</label>'.sel('layout_type',layouts()).'<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
+ if(can('playlists.edit'))echo '<a class="btn btn-primary mb-3" href="'.h(url('playlist-generator.php'.($scope?'?company='.$scope:''))).'">Generar listas automáticamente</a>';
+ if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0);field('name','Nombre');echo ds_playlist_modes_form().'<label>Orientación</label>'.sel('orientation',orientations(),'landscape').'<label>Formato</label>'.sel('layout_type',layouts()).'<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
  echo '<form method="get" class="ds-filters" aria-label="Filtros de listas">'.company_filter_control($scope).'<div class="ds-filter-field"><label>Nombre de lista</label><input type="search" name="q" class="form-control" value="'.h($query).'" placeholder="Buscar lista"></div><div class="ds-filter-field"><label>Orientación</label><select name="orientation" class="form-select"><option value="">Todas</option>';foreach(orientations() as $key=>$label)echo '<option value="'.h($key).'" '.($fOri===$key?'selected':'').'>'.h($label).'</option>';echo '</select></div><div class="ds-filter-field"><label>Formato</label><select name="layout" class="form-select"><option value="">Todos</option>';foreach(layouts() as $key=>$label)echo '<option value="'.h($key).'" '.($fLayout===$key?'selected':'').'>'.h($label).'</option>';echo '</select></div><div class="ds-filter-actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-outline-secondary" href="'.h(url('playlists.php')).'">Limpiar</a></div></form><p class="ds-filter-count">Listas encontradas: '.count($filtered).'</p>';
  if(!$filtered)echo '<div class="card ds-list-empty">No hay listas que coincidan con los filtros.</div>';
  foreach($filtered as $p){
@@ -91,7 +101,7 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
   $settingsId='playlist-settings-'.(int)$p['id'];
   $playlistItems=array_values(array_filter($items,static fn($i)=>(int)$i['playlist_id']===(int)$p['id']));
   $open=(int)($_POST['playlist_id']??0)===(int)$p['id']||($createdCopy&&(int)$createdCopy['id']===(int)$p['id']);
-  echo '<details class="card card-body mb-3 ds-playlist" id="playlist-'.(int)$p['id'].'"'.($open?' open':'').'><summary><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span><strong>'.h($p['name']).'</strong><span class="ds-playlist-meta">'.h(orientations()[$p['orientation']]??'').' · '.h(layouts()[$p['layout_type']]??'').' · '.count($playlistItems).' elementos</span></summary><div class="ds-playlist-content"><div class="d-flex justify-content-between flex-wrap gap-2"><p class="text-muted">Transición predeterminada: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</p><div class="d-flex flex-wrap gap-2">';
+  echo '<details class="card card-body mb-3 ds-playlist" id="playlist-'.(int)$p['id'].'"'.($open?' open':'').'><summary><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span><strong>'.h($p['name']).'</strong><span class="ds-playlist-meta">'.h(ds_playlist_mode_names((int)$p['mode_mask'])).' · '.h(orientations()[$p['orientation']]??'').' · '.h(layouts()[$p['layout_type']]??'').' · '.count($playlistItems).' elementos</span></summary><div class="ds-playlist-content"><div class="d-flex justify-content-between flex-wrap gap-2"><p class="text-muted">Transición predeterminada: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</p><div class="d-flex flex-wrap gap-2">';
   if($editableList)echo '<button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#duplicate-playlist-'.(int)$p['id'].'">Duplicar / copiar a empresa</button> <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#'.$settingsId.'">Editar lista / empresa</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-playlists-'.(int)$p['id'].'">Eliminar lista</button>';
   echo '<a class="btn btn-sm btn-outline-primary" target="_blank" href="'.h(url('preview.php?id='.$p['id'])).'">Vista previa</a></div></div>';
   if($editableList){
@@ -103,7 +113,7 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
     $dsModals.=ob_get_clean();
     ob_start();echo '<div class="modal fade" id="'.$settingsId.'" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Configuración de lista</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">';form_open();
     echo '<input type="hidden" name="action" value="rename">'.company_select((int)$p['tenant_id']).'<input type="hidden" name="playlist_id" value="'.(int)$p['id'].'">';
-    field('name','Nombre',(string)'text',(string)$p['name']);
+    field('name','Nombre',(string)'text',(string)$p['name']);echo ds_playlist_modes_form((int)$p['mode_mask']);
     echo '<p class="ds-hint">Cambiar de empresa traslada la lista y solo se permite si está vacía y sin asignaciones. Para conservarla y usarla en otra empresa, utiliza «Duplicar / copiar a empresa».</p><label class="form-label">Efecto de transición</label>'.sel('transition_effect',transitions(),(string)$p['transition_effect']);
     field('transition_ms','Duración (milisegundos; 0 = corte)','number',(string)$p['transition_ms']);
     echo '<button class="btn btn-primary">Guardar cambios</button></form></div></div></div></div>';
@@ -152,7 +162,7 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
     echo '</td>';
    }
    echo '<td class="ds-playlist-actions">';
-   if($editable)foreach(['up'=>'↑','down'=>'↓','delete'=>'Eliminar','duplicate_row'=>'Duplicar'] as $act=>$label){form_open();echo '<input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><input type="hidden" name="item_id" value="'.$iid.'"><input type="hidden" name="stamp" value="'.h(ds_playlist_stamp($playlistItems)).'"><button class="btn btn-sm btn-outline-secondary" name="action" value="'.$act.'" aria-label="'.h(['up'=>'Subir elemento','down'=>'Bajar elemento','delete'=>'Eliminar elemento','duplicate_row'=>'Duplicar renglón'][$act]).'" '.($act==='delete'?'onclick="return confirm(\'¿Eliminar este elemento?\')"':'').'>'.$label.'</button></form>';}
+   if($editable)foreach(['up'=>'↑','down'=>'↓','delete'=>ds_icon('delete',16),'duplicate_row'=>ds_icon('copy',16)] as $act=>$label){form_open();echo '<input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><input type="hidden" name="item_id" value="'.$iid.'"><input type="hidden" name="stamp" value="'.h(ds_playlist_stamp($playlistItems)).'"><button class="btn btn-sm btn-outline-secondary" name="action" value="'.$act.'" aria-label="'.h(['up'=>'Subir elemento','down'=>'Bajar elemento','delete'=>'Eliminar elemento','duplicate_row'=>'Duplicar renglón'][$act]).'" '.($act==='delete'?'onclick="return confirm(\'¿Eliminar este elemento?\')"':'').'>'.$label.'</button></form>';}
    echo '</td></tr>';
   }
   if(!$playlistItems)echo '<tr><td colspan="8">Lista vacía. Añade medios, listas compatibles o un separador blanco.</td></tr>';
@@ -162,7 +172,7 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
    foreach($lists as $q)if(((int)$q['tenant_id']===(int)$p['tenant_id']||(int)$q['is_shared']===1)&&(int)$q['id']!==(int)$p['id']&&compatible($p,$q)){
     try{validate_graph((int)$p['tenant_id'],(int)$p['id'],(int)$q['id']);$available[]=['list'=>$q,'empty'=>!expanded((int)$p['tenant_id'],(int)$q['id'])];}catch(RuntimeException $e){$excluded++;}
    }
-   echo '<form method="post" class="row g-2 mt-3" data-playlist-add><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="add"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><div class="col-md-6"><label class="form-label">Medios o listas compatibles</label><select class="form-select" name="choice" required><option value="">Selecciona un medio o una lista</option>'.(can('media.edit')&&$p['orientation']!=='any'?'<optgroup label="Separadores"><option value="separator:0">Separador blanco · tamaño de esta lista</option></optgroup>':'').'<optgroup label="Medios compatibles">';
+   echo '<form method="post" class="row g-2 mt-3" data-playlist-add><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="add"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><div class="col-md-6"><label class="form-label">Medios o listas compatibles</label><select class="form-select" name="choice" required><option value="">Selecciona un medio o una lista</option>'.(can('media.edit')&&$p['orientation']!=='any'?'<optgroup label="Separadores"><option value="separator:0">Separador blanco · tamaño de esta lista</option><option value="separator:1">Separador negro · tamaño de esta lista</option></optgroup>':'').'<optgroup label="Medios compatibles">';
    foreach($media as $m)if(((int)$p['tenant_id']===(int)$m['tenant_id']||(int)$m['is_shared']===1)&&compatible($p,$m)){
     $used=$usage['media:'.$m['id']]??0;
     echo '<option value="media:'.(int)$m['id'].'">'.h($m['name']).($used?' · Ya incluido '.$used.' vez/veces':'').'</option>';

@@ -17,7 +17,7 @@ function ds_formats_update(array $input,int $revision):int {
   $old=ds_formats_current(true);if($old['revision']!==$revision)throw new RuntimeException('Los formatos cambiaron. Recarga antes de guardar.');
   foreach(['bottom'=>'bottom_height_pct','side'=>'side_width_pct'] as $layout=>$key){
    if($v[$key]===$old[$key])continue;
-   foreach(dball('SELECT id,orientation,width_px,height_px FROM media WHERE layout_type=?',[$layout]) as $m){
+   foreach(dball('SELECT id,orientation,width_px,height_px FROM media WHERE layout_type=? AND separator_key IS NULL',[$layout]) as $m){
     $oris=$m['orientation']==='any'?['landscape','portrait']:[$m['orientation']];
     foreach($oris as $ori){$canvas=$ori==='portrait'?[1080,1920]:[1920,1080];
      $w=$canvas[0]*($layout==='side'?$v[$key]/100:1);$h=$canvas[1]*($layout==='bottom'?$v[$key]/100:1);
@@ -27,7 +27,7 @@ function ds_formats_update(array $input,int $revision):int {
    }
   }
   $next=$revision+1;$pdo->prepare('UPDATE media_format_settings SET revision=?,bottom_height_pct=?,side_width_pct=?,updated_at=UTC_TIMESTAMP() WHERE id=1')->execute([$next,$v['bottom_height_pct'],$v['side_width_pct']]);
-  $pdo->commit();return $next;
+  $pdo->commit();require_once __DIR__.'/media_separator.php';ds_seed_separators();return $next;
  }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
 /** Hold the format row while committing an upload/classification. */

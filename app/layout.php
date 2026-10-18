@@ -2,6 +2,8 @@
 /** Digital Signage unified shell — visual update 0.3.2, Bootstrap local. */
 function ds_icon(string $name, int $size=19):string {
     $paths=[
+        'delete'=>'<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/>',
+        'copy'=>'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V3H3v13h5"/>',
         'dashboard'=>'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
         'companies'=>'<rect x="4" y="7" width="16" height="14" rx="1"/><path d="M8 7V3h8v4M8 12h2m4 0h2m-8 4h2m4 0h2"/>',
         'users'=>'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -46,6 +48,8 @@ function ds_nav_groups():array {
         // Applications remain independent: this is only the temporary operational
         // bridge while 2Cam Turnos and 2Cam Sports implement their own portals.
         'Aplicaciones vinculadas'=>[
+            ['applications.php?app=turnos','Configurar Turnos','turnos.view','screen'],
+            ['applications.php?app=sports','Configurar Sports','sports.view','screen'],
             ['app-downloads.php','Descargar aplicaciones',null,'update'],
             ['live-panels.php','Turnos y marcadores (pruebas)','devices.view','screen']
         ],

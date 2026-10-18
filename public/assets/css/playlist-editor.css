@@ -17,3 +17,15 @@
 .ds-playlist-grid input:disabled,.ds-playlist-grid select:disabled{opacity:1;color:#314c6d;background:#f6f8fc;border-color:transparent}
 .ds-playlist.is-editing .ds-playlist-grid{border-left:3px solid #245ad4}
 .ds-playlist-actions{white-space:nowrap}
+
+/* Compact rows retain visible thumbnails and labels for remote and keyboard use. */
+.ds-body .ds-playlist-grid td,.ds-body .ds-playlist-grid thead th{padding:6px 5px}
+.ds-playlist-grid input{min-width:64px;max-width:90px;padding:5px 6px}
+.ds-playlist-grid select{min-width:120px;padding:5px 24px 5px 6px}
+.ds-playlist-grid .ds-row-name{min-width:120px;max-width:220px;font-size:12px}
+.ds-row-thumbnail{min-width:80px;width:80px}
+.ds-row-thumbnail img,.ds-row-thumbnail video,.ds-row-list-preview{width:72px;height:50px}
+.ds-body .ds-playlist-actions{min-width:136px;white-space:nowrap}
+.ds-playlist-actions form{display:inline-block;margin:0}
+.ds-playlist-actions .btn{padding:4px 7px;min-width:28px}
+.ds-grid-toolbar{gap:6px;margin-bottom:9px}

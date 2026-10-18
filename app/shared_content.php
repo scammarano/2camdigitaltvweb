@@ -39,6 +39,7 @@ function ds_content_share(string $table,int $id,int $tid,bool $shared):void {
  }catch(Throwable $e){if(db()->inTransaction())db()->rollBack();throw $e;}
 }
 function ds_share_checkbox(string $table,array $r):string {
+ if($table==='media'&&!empty($r['separator_key']))return '<span class="badge text-bg-info">Separador global · todas las empresas</span>';
  $inherited=$table==='media'&&(int)$r['is_shared']!==1&&isset(ds_shared_media_ids()[(int)$r['id']]);
  if(!can('content.share')||(!is_super()&&(int)$r['tenant_id']!==tenant()))return (int)$r['is_shared']===1?'<span class="badge text-bg-info">Compartido · solo lectura fuera de la empresa propietaria</span>':($inherited?'<small>Accesible mediante una lista compartida</small>':'');
  return '<form method="post" class="ds-share-form"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="share"><input type="hidden" name="tenant_id" value="'.(int)$r['tenant_id'].'"><input type="hidden" name="id" value="'.(int)$r['id'].'"><input type="hidden" name="playlist_id" value="'.(int)$r['id'].'"><label><input type="checkbox" name="is_shared" value="1"'.((int)$r['is_shared']?' checked':'').' onchange="this.form.submit()"> Disponible para otras empresas</label>'.($table==='playlists'?'<small class="d-block text-muted">Incluye la lectura de los medios contenidos. Las otras empresas no pueden editar el original.</small>':'').($inherited?'<small class="d-block text-muted">También accesible mediante una lista compartida.</small>':'').'</form>';

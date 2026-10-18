@@ -25,6 +25,7 @@ function ds_bulk_locked_records(array $ids,?int $visibleScope):array {
     $records=dball('SELECT * FROM media WHERE id IN ('.$placeholders.') ORDER BY id FOR UPDATE',$params);
     if(count($records)!==count($ids))throw new RuntimeException('Uno o varios medios fueron eliminados o modificados. Actualiza la biblioteca y selecciona nuevamente.');
     foreach($records as $r){
+        if(!empty($r['separator_key']))throw new RuntimeException('Los separadores globales se reutilizan y no se trasladan ni reclasifican por empresa');
         if(!is_super() && (int)$r['tenant_id']!==tenant())
             throw new RuntimeException('No puedes modificar medios de otra empresa.');
         if($visibleScope!==null && (int)$r['tenant_id']!==$visibleScope)

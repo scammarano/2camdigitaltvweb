@@ -60,7 +60,7 @@ jobs:
         run: |
           php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
           php tests/config_tenant_test.php
-          php -r 'require "app/bootstrap.php"; $m=require ROOT."/database/migrations/0.4.28.php"; $m(db());'
+          php -r 'require "app/bootstrap.php"; $m=require ROOT."/database/migrations/0.4.29.php"; $m(db());'
           php tests/github_updater_test.php
           php tests/device_crud_test.php forged
           php tests/device_crud_test.php identity
@@ -83,6 +83,8 @@ jobs:
           php tests/company_context_clear_test.php forged
           php tests/apk_repository_test.php
           php tests/shared_service_test.php
+          php tests/applications_generator_test.php
+          for page in users roles applications playlist-generator; do php tests/portal29_page_test.php "$page"; done
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -92,6 +94,7 @@ jobs:
           npx playwright install --with-deps chromium
           php -S 127.0.0.1:8080 -t public >test-results/php-server.log 2>&1 &
           python3 tests/shared_service_http.py
+          python3 tests/application_config_http.py
           node tests/playlist_editor_browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
