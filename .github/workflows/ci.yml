@@ -60,6 +60,7 @@ jobs:
         run: |
           php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
           php tests/config_tenant_test.php
+          php -r 'require "app/bootstrap.php"; $m=require ROOT."/database/migrations/0.4.28.php"; $m(db());'
           php tests/github_updater_test.php
           php tests/device_crud_test.php forged
           php tests/device_crud_test.php identity
