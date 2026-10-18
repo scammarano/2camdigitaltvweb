@@ -87,7 +87,7 @@ jobs:
           php tests/settings30_test.php
           php tests/settings30_page_test.php
           for action in create delete self role; do php tests/user_role_post_test.php "$action"; done
-          for page in users roles applications playlist-generator; do php tests/portal29_page_test.php "$page"; done
+          for page in users roles applications playlist-generator playlist-guide; do php tests/portal29_page_test.php "$page"; done
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

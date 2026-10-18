@@ -56,7 +56,7 @@ try {
     $app=substr((string)($p['app_version']??''),0,32);$mode=(int)($p['active_mode']??0);$cache=max(0,min(100000,(int)($p['cached_media']??0)));
     $free=isset($p['free_storage_bytes'])?max(0,(int)$p['free_storage_bytes']):null;
     $last=substr((string)($p['last_error']??''),0,250);
-    $localIp=(string)($p['local_ip']??'');if(!filter_var($localIp,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)||!preg_match('/^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/D',$localIp))$localIp=null;
+    $localIp=is_string($p['local_ip']??null)?$p['local_ip']:'';if(!filter_var($localIp,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)||!preg_match('/^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/D',$localIp))$localIp=null;
     execsql('INSERT INTO device_health(local_ip,device_id,tenant_id,app_version,active_mode,cached_media,free_storage_bytes,last_error,last_report) VALUES(?,?,?,?,?,?,?,?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE local_ip=VALUES(local_ip),app_version=VALUES(app_version),active_mode=VALUES(active_mode),cached_media=VALUES(cached_media),free_storage_bytes=VALUES(free_storage_bytes),last_error=VALUES(last_error),last_report=VALUES(last_report)',[$localIp,$did,$tid,$app,$mode,$cache,$free,$last]);
     api_out(['ok'=>true,'server_time'=>gmdate('c')]);
   }

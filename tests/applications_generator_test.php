@@ -15,6 +15,8 @@ ok29(count($lists)===1&&$lists[0]['items']===2,'Generator group/separator missin
 $items=dball('SELECT * FROM playlist_items WHERE playlist_id=? ORDER BY position',[$pid]);ok29((float)$items[0]['duration_seconds']===6.5&&(float)$items[1]['duration_seconds']===0.1,'Generator timings');ok29((int)dbone('SELECT COUNT(*) n FROM media')['n']===$before,'Generator duplicated media');
 $tot=(int)dbone('SELECT COUNT(*) n FROM playlists')['n'];reject29(fn()=>ds_generate_playlists(1,[$mid,999999],['orientation'=>'landscape','layout_type'=>'bottom']),'Generator accepted inaccessible media');ok29((int)dbone('SELECT COUNT(*) n FROM playlists')['n']===$tot,'Partial generator commit');
 reject29(fn()=>ds_generate_playlists(1,[$mid],['orientation'=>'portrait','layout_type'=>'bottom']),'Generator accepted wrong orientation');
+reject29(fn()=>ds_generate_playlists(1,[$mid],['orientation'=>'landscape','layout_type'=>'fullscreen']),'Generator accepted wrong format');
+reject29(fn()=>ds_generate_playlists(1,[$mid],['layout_type'=>'bottom']),'Generator accepted missing orientation');
 $c=ds_config_defaults();$c['overlay_playlist_bottom']=$pid;ds_config_validate_playlists($c,1,1);$c['scoreboard_playlist_bottom']=$pid;ds_config_validate_playlists($c,1,1);$c['signage_playlist_id']=$pid;reject29(fn()=>ds_config_validate_playlists($c,1,1),'Cartelera accepted lower strip');
 function add29(int $tid,string $app,array $values):int{return ds_app_entity($tid,$app,ds_app_config($tid,$app)['revision'],['action'=>'save','enabled'=>'1']+$values);}
 $room=add29(1,'turnos',['kind'=>'room','name'=>'Sala 29']);$foreign=add29(2,'turnos',['kind'=>'room','name'=>'Sala ajena 29']);

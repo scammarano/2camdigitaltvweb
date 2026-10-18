@@ -1,5 +1,13 @@
 # Web 0.4.30 / APK 0.4.21-debug
 
+## Listas: orientación y formato primero
+
+El flujo es empresa → orientación de pantalla (horizontal/vertical) → formato → medios compatibles → asignación a pantalla y modo. Se eliminan los checks de modos de creación y edición. La compatibilidad se deriva: pantalla completa admite Cartelera, Overlay, Turnos y Marcador; franjas inferior/lateral y medias pantallas admiten Overlay, Turnos y Marcador. Barra y franja son sinónimos, no dos tamaños distintos. Se conservan los cinco formatos existentes. La migración normaliza las máscaras antiguas sin borrar listas, renglones o asignaciones.
+
+El generador consulta únicamente medios con la orientación y el formato elegidos; el servidor vuelve a verificar cada ID y sus medidas antes de crear la lista. No acepta mezclar franjas laterales para pantallas horizontales y verticales. No duplica archivos. Las listas nuevas exigen orientación explícita; se conserva la lectura de listas antiguas «indiferente». Los videos no se descartan por los modos automáticos; Overlay continúa reproduciendo solo imágenes y bloquea una lista sin imágenes reproducibles.
+
+La guía visual enlazada desde el generador muestra los diez casos (cinco formatos por dos orientaciones), las medidas centrales vigentes y los modos compatibles. El logo aprobado se integra como PNG en icono e inicio de la APK; el proceso de compilación verifica sus hashes.
+
 Los 43 ajustes comparten nombres, opciones, valores predeterminados y pestañas: General, Cartelera, Overlay, Turnos, Marcador deportivo, Conexión Turnos / Marcador, Diagnóstico y Actualizaciones. La TV conserva además Equipo y panel LAN para URL, puerto, PIN y permisos locales; esos permisos/secretos no se administran remotamente.
 
 En TV, los números se editan pulsando OK sobre el botón con su valor. Se abre un editor grande, con foco, validación y Guardar/Cancelar. Contenido centrado, ancho limitado, márgenes de seguridad y pestañas que permanecen visibles. La IP aparece en el inicio, ajustes y panel LAN; el portal muestra la última IPv4 privada reportada, con la fecha del reporte existente. No confundir IP reportada con conectividad actual.

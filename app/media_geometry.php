@@ -9,8 +9,8 @@ function ds_media_orientations():array {
 function ds_media_zones():array {
     $f=ds_formats_current();
     return ['fullscreen'=>['name'=>'Pantalla completa','w'=>100,'h'=>100,'x'=>0,'y'=>0],
-            'bottom'=>['name'=>'Barra inferior','w'=>100,'h'=>$f['bottom_height_pct'],'x'=>0,'y'=>100-$f['bottom_height_pct']],
-            'side'=>['name'=>'Barra lateral derecha','w'=>$f['side_width_pct'],'h'=>100,'x'=>100-$f['side_width_pct'],'y'=>0],
+            'bottom'=>['name'=>'Franja inferior','w'=>100,'h'=>$f['bottom_height_pct'],'x'=>0,'y'=>100-$f['bottom_height_pct']],
+            'side'=>['name'=>'Franja lateral derecha','w'=>$f['side_width_pct'],'h'=>100,'x'=>100-$f['side_width_pct'],'y'=>0],
             'half_horizontal'=>['name'=>'Media pantalla horizontal (inferior)','w'=>100,'h'=>50,'x'=>0,'y'=>50],
             'half_vertical'=>['name'=>'Media pantalla vertical (derecha)','w'=>50,'h'=>100,'x'=>50,'y'=>0]];
 }
