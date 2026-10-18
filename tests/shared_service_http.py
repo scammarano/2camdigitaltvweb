@@ -23,6 +23,11 @@ status,raw=request('device-media.php?id='+str(f['media']),f['tokens'][1]);assert
 assert request('device-media.php?id='+str(f['private']),f['tokens'][1])[0]==404
 assert request('devices.php',payload={'_csrf':'denied-fixture','action':'service','id':'2','tenant_id':'2','suspended':'1','service_revision':0},form=True,session=f['restricted_session'])[0]==403
 assert request('media.php',payload={'_csrf':'denied-fixture','action':'share','id':f['private'],'tenant_id':'2','is_shared':'1'},form=True,session=f['restricted_session'])[0]==403
+for shared in [True,False]:
+    payload={'_csrf':'publisher-fixture','action':'share','id':f['private'],'tenant_id':'1'}
+    if shared:payload['is_shared']='1'
+    status,body=request('media.php',payload=payload,form=True,session=f['publisher_session']);assert status==200 and b'alert alert-danger' not in body
+    assert request('device-media.php?id='+str(f['private']),f['tokens'][1])[0]==(200 if shared else 404)
 s=get_service()
 def change(value,revision):
     status,body=request('devices.php',payload={'_csrf':'scope-fixture','action':'service','id':'1','tenant_id':'1','suspended':'1' if value else '0','service_revision':revision,'reason':'HTTP test'},form=True)

@@ -3,7 +3,7 @@ require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once RO
 $t=tenant();$error='';$ok='';$createdCopy=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
-  require_permission('playlists.edit');$target=post_tenant();$action=$_POST['action']??'create';
+  $target=post_tenant();$action=$_POST['action']??'create';if($action!=='share')require_permission('playlists.edit');
   if($action==='share'){ds_content_share('playlists',(int)($_POST['id']??0),$target,isset($_POST['is_shared']));
   }elseif($action==='create'){
    $name=trim($_POST['name']??'');$ori=$_POST['orientation']??'';$layout=$_POST['layout_type']??'';

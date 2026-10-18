@@ -3,7 +3,7 @@ require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once RO
 $t=tenant();$error='';$ok='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
-  require_permission('media.edit');$action=$_POST['action']??'upload';$target=post_tenant();
+  $action=$_POST['action']??'upload';if($action!=='share')require_permission('media.edit');$target=post_tenant();
   if($action==='share'){ds_content_share('media',(int)($_POST['id']??0),$target,isset($_POST['is_shared']));$ok='Disponibilidad actualizada';
   }elseif($action==='white_separator'){
    ds_media_white_separator($target,(string)($_POST['orientation']??''),(string)($_POST['layout_type']??''));
