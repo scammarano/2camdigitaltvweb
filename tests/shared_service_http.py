@@ -4,10 +4,10 @@ from pathlib import Path
 base='http://127.0.0.1:8080/'
 f=json.loads(Path('.service-http-fixture.json').read_text())
 cookie=json.loads(Path('.browser-session.json').read_text())['session']
-def request(path,token=None,payload=None,form=False):
+def request(path,token=None,payload=None,form=False,session=None):
     headers={}
     if token:headers['Authorization']='Bearer '+token
-    if form:headers['Cookie']='PHPSESSID='+cookie
+    if form:headers['Cookie']='PHPSESSID='+(session or cookie)
     data=None
     if payload is not None:
         data=(urllib.parse.urlencode(payload) if form else json.dumps(payload)).encode()
@@ -21,6 +21,8 @@ def get_service(i=0):
     return json.loads(raw)['service']
 status,raw=request('device-media.php?id='+str(f['media']),f['tokens'][1]);assert status==200 and raw.startswith(b'\x89PNG'),(status,raw[:100])
 assert request('device-media.php?id='+str(f['private']),f['tokens'][1])[0]==404
+assert request('devices.php',payload={'_csrf':'denied-fixture','action':'service','id':'2','tenant_id':'2','suspended':'1','service_revision':0},form=True,session=f['restricted_session'])[0]==403
+assert request('media.php',payload={'_csrf':'denied-fixture','action':'share','id':f['private'],'tenant_id':'2','is_shared':'1'},form=True,session=f['restricted_session'])[0]==403
 s=get_service()
 def change(value,revision):
     status,body=request('devices.php',payload={'_csrf':'scope-fixture','action':'service','id':'1','tenant_id':'1','suspended':'1' if value else '0','service_revision':revision,'reason':'HTTP test'},form=True)

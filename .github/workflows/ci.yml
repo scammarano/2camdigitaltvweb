@@ -81,8 +81,8 @@ jobs:
           php tests/portal_scope_page_test.php schedules screen
           php tests/company_context_clear_test.php valid
           php tests/company_context_clear_test.php forged
-          php tests/shared_service_test.php
           php tests/apk_repository_test.php
+          php tests/shared_service_test.php
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

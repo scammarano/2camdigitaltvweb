@@ -32,5 +32,7 @@ $_SESSION['user']=['id'=>211,'tenant_id'=>2];reject28(fn()=>ds_service_change(1,
 $_SESSION['user']=['id'=>100,'tenant_id'=>1];ds_content_share('playlists',$root,1,true);execsql("INSERT INTO playlist_items(tenant_id,playlist_id,kind,child_playlist_id,position) VALUES(2,?,'playlist',?,10)",[$consumer,$root]);
 execsql('UPDATE devices SET active_playlist_id=? WHERE id=1',[$root]);execsql('UPDATE devices SET active_playlist_id=? WHERE id=2',[$consumer]);
 $tokens=[bin2hex(random_bytes(32)),bin2hex(random_bytes(32))];foreach($tokens as $i=>$token)execsql('UPDATE devices SET device_token_hash=? WHERE id=?',[hash('sha256',$token),$i+1]);
-file_put_contents(ROOT.'/.service-http-fixture.json',json_encode(['tokens'=>$tokens,'media'=>$mid,'private'=>$private]));chmod(ROOT.'/.service-http-fixture.json',0600);
+execsql('UPDATE users SET denied_permissions_json=? WHERE id=211',[json_encode(['devices.suspend'])]);
+session_write_close();session_id(bin2hex(random_bytes(16)));session_start();$_SESSION=['user'=>['id'=>211,'tenant_id'=>2],'active_tenant'=>2,'csrf'=>'denied-fixture'];$restrictedSession=session_id();session_write_close();
+file_put_contents(ROOT.'/.service-http-fixture.json',json_encode(['tokens'=>$tokens,'media'=>$mid,'private'=>$private,'restricted_session'=>$restrictedSession]));chmod(ROOT.'/.service-http-fixture.json',0600);
 echo "SHARED_SERVICE_PASS: no byte copies, shared graph/media access, private isolation, read-only ownership, revocation guard, per-user restrictions/session invalidation, service request/report/stale/tenant checks\n";
