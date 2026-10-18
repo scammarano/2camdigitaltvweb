@@ -6,7 +6,11 @@ function reject28(callable $fn):void{$caught=false;try{$fn();}catch(RuntimeExcep
 $m=require ROOT.'/database/migrations/0.4.28.php';$m(db());$m(db());
 execsql("INSERT INTO users(id,tenant_id,name,email,password_hash,role,is_active) VALUES(211,2,'Admin B','admin-b@example.invalid',?,'admin',1)",[password_hash('test-password-28',PASSWORD_DEFAULT)]);
 $_SESSION['user']=['id'=>100,'tenant_id'=>1];$_SESSION['csrf']='shared-fixture';
-$mid=ds_media_white_separator(1,'landscape','bottom');$private=ds_media_white_separator(1,'portrait','fullscreen');
+function owned28(string $ori,string $layout):int {
+ $g=ds_media_geometry($ori,$layout);$png=ds_white_png($g['width'],$g['height']);$filename=bin2hex(random_bytes(20));$dir=ROOT.'/storage/media/1';if(!is_dir($dir))mkdir($dir,0700,true);file_put_contents($dir.'/'.$filename,$png);
+ execsql('INSERT INTO media(tenant_id,name,filename,mime,size_bytes,sha256,orientation,layout_type,width_px,height_px) VALUES(1,?,?,?,?,?,?,?,?,?)',['Private sharing fixture '.$ori,$filename,'image/png',strlen($png),hash('sha256',$png),$ori,$layout,$g['width'],$g['height']]);return (int)db()->lastInsertId();
+}
+$mid=owned28('landscape','bottom');$private=owned28('portrait','fullscreen');
 execsql("INSERT INTO playlists(tenant_id,name,orientation,layout_type) VALUES(1,'Shared publisher','landscape','bottom')");$root=(int)db()->lastInsertId();
 execsql("INSERT INTO playlist_items(tenant_id,playlist_id,kind,media_id,position,duration_seconds) VALUES(1,?,'media',?,10,0.1)",[$root,$mid]);
 execsql("INSERT INTO playlists(tenant_id,name,orientation,layout_type) VALUES(2,'Shared consumer','landscape','bottom')");$consumer=(int)db()->lastInsertId();

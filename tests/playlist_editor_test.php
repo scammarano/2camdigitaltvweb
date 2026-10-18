@@ -16,9 +16,9 @@ foreach([1,2] as $tid){
 }
 execsql("INSERT INTO playlists(tenant_id,name,orientation,layout_type) VALUES(1,'Editor fixture','landscape','bottom')");$pid=(int)db()->lastInsertId();
 $mid=ds_media_white_separator(1,'landscape','bottom');$again=ds_media_white_separator(1,'landscape','bottom');ck26($again===$mid,'Separator duplicated unnecessarily');
-$m=dbone('SELECT * FROM media WHERE id=?',[$mid]);$bytes=file_get_contents(ROOT.'/storage/media/1/'.$m['filename']);$info=getimagesizefromstring($bytes);ck26($info[0]===1920&&$info[1]===216&&hash('sha256',$bytes)===$m['sha256'],'PNG dimensions/hash mismatch');
+$m=dbone('SELECT * FROM media WHERE id=?',[$mid]);$bytes=file_get_contents(ROOT.'/storage/media/'.(int)$m['tenant_id'].'/'.$m['filename']);$info=getimagesizefromstring($bytes);ck26($info[0]===1920&&$info[1]===216&&hash('sha256',$bytes)===$m['sha256'],'PNG dimensions/hash mismatch');
 if(!is_dir(ROOT.'/test-results'))mkdir(ROOT.'/test-results',0700,true);file_put_contents(ROOT.'/test-results/white-bottom.png',$bytes);
-foreach(['landscape','portrait'] as $o)foreach(array_keys(layouts()) as $l){$id=ds_media_white_separator(1,$o,$l);$image=dbone('SELECT * FROM media WHERE id=?',[$id]);$g=ds_media_geometry($o,$l);$dims=getimagesize(ROOT.'/storage/media/1/'.$image['filename']);ck26($dims[0]===$g['width']&&$dims[1]===$g['height'],'Incorrect separator geometry');}
+foreach(['landscape','portrait'] as $o)foreach(array_keys(layouts()) as $l){$id=ds_media_white_separator(1,$o,$l);$image=dbone('SELECT * FROM media WHERE id=?',[$id]);$g=ds_media_geometry($o,$l);$dims=getimagesize(ROOT.'/storage/media/'.(int)$image['tenant_id'].'/'.$image['filename']);ck26($dims[0]===$g['width']&&$dims[1]===$g['height'],'Incorrect separator geometry');}
 foreach([10,20] as $pos)execsql("INSERT INTO playlist_items(tenant_id,playlist_id,kind,media_id,position) VALUES(1,?,'media',?,?)",[$pid,$mid,$pos]);
 $read=static fn()=>dball('SELECT * FROM playlist_items WHERE tenant_id=1 AND playlist_id=? ORDER BY position,id',[$pid]);
 $before=$read();$stamp=ds_playlist_stamp($before);$rows=[];foreach($before as $i)$rows[$i['id']]=['duration'=>'7','repeat'=>'2','transition_effect'=>'slide-right','transition_ms'=>'1200'];
