@@ -3,12 +3,12 @@
   "product": "2cam-apk",
   "platform": "android-tv",
   "package": "com.digitalsignage.tv",
-  "version_name": "0.4.17-debug",
-  "version_code": 417,
+  "version_name": "0.4.18-debug",
+  "version_code": 418,
   "min_sdk": 19,
   "channel": "debug",
   "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
-  "size": 2160050,
-  "sha256": "e764723b0274cdfa764993f7d7bd89cb1f0d087313bb054b77a80ba421013dd3",
-  "notes": "Duraciones de medios desde 0,1 segundos, sin redondear, en Cartelera y regiones inteligentes. Overlay usa temporizador preciso y respeta el tiempo del medio dentro del máximo configurado. API22 probado con imagen y ventana reales. Conserva HUD, Sports LAN, cuatro modos y firma permanente compatible con las APK 0.4.14–0.4.16 entregadas. Prueba física pendiente."
+  "size": 2164146,
+  "sha256": "8d22b3812e069edc8d5adada9c678e73a5e0c5909c8f5129d9646e7e1fd04e92",
+  "notes": "Suspensión de servicio por pantalla con revisión, persistencia y consulta remota aproximada de15s. Detiene reproducción y ventanas Overlay antes de confirmar. No se anula desde ajustes locales/LAN. Requiere web0.4.28 y conexión para recibir nuevas órdenes. Conserva décimas, cuatro modos, HUD y Sports LAN, API19+. Pruebas API22 correctas; firma permanente compatible con las entregas0.4.14–0.4.17. Prueba física pendiente."
 }

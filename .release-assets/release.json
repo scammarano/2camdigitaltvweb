@@ -1,18 +1,18 @@
 {
-  "tag": "web-v0.4.27",
-  "source_commit": "c5820cf936ad4794a83e854d3790754e70d90202",
-  "asset": "SIGNAGE_UPDATE_v0.4.27_LISTAS_MINIATURAS_DECIMAS_RSA.zip",
-  "sha256": "a3e2a50eabca38b019b53b3bca3c1f2001050cd8d89de9265ec407abcb698740",
-  "title": "Digital Signage Web0.4.27 + APK0.4.17 · Miniaturas y edición múltiple",
-  "notes": "Miniaturas reales de medios en renglones, duplicar junto a eliminar, selección múltiple para editar/duplicar/eliminar con control de empresa y revisión. Valores comunes para los cuatro ajustes, sin sobrescribir los campos no indicados. Separador blanco en el combo de medios con duración inicial 0,1 s y corte inmediato, sin botón adicional en la lista. Duración decimal en SQL, manifiesto, copia y reproductores web. APK0.4.17-debug API19+ conserva décimas y temporizador exacto de Overlay, con duración del medio limitada por el máximo de aparición y transición acotada. Probado en emulador API22 con imagen real de100ms y ventana Overlay breve; conserva Sports LAN, HUD, modos, arranque y controles. Firma Android permanente, misma huella de las entregas0.4.14–0.4.16. PHP/MySQL y navegador: aislamiento, operaciones masivas atómicas, POST reales, miniaturas autenticadas, migración idempotente y respaldo del actualizador. ZIP acumulativo desde web0.4.16. No instala automáticamente en hosting/TV; prueba física y ACK formal v2 pendientes. ZIP SHA256: a3e2a50eabca38b019b53b3bca3c1f2001050cd8d89de9265ec407abcb698740",
+  "tag": "web-v0.4.29",
+  "source_commit": "39b91b4013a7df9833390222ac41a4d2ee85fbbd",
+  "asset": "SIGNAGE_UPDATE_v0.4.29_PORTAL_CENTRAL_LISTAS_RSA.zip",
+  "sha256": "6662a1d64a5c2c77b58acf5c90116cb6c50830aa2156a38ee136f6ee56c58a12",
+  "title": "Digital Signage Web 0.4.29 · Portal central Turnos/Sports y generador de listas",
+  "notes": "Portal central de configuración por empresa para Turnos y Sports con los mismos usuarios/roles ampliados. Salas, servicios, ventanillas, pistas, torneos, equipos, encuentros y pantallas vinculadas a una sola aplicación. API GET autenticada, revisión y claves de lectura revocables; pantalla ve solo sala/pista pública asignada. Guardar configuración no confirma ejecución en APK. Generador de listas por empresa/modos/formato/orientación con selección múltiple, tiempos/transición comunes y separadores opcionales de0,1s. Modos explícitos en listas, miniaturas y grid compacto con iconos, contador/filtros de usos, separadores globales blanco/negro y color bajo demanda sin empresa propietaria. Corrección de creación multiempresa de usuarios y eliminación de usuarios/roles con referencias protegidas. Incluye web0.4.28: compartir medios/listas por rol, restricciones por usuario y suspensión de servicio. APK0.4.18-debug añade política de suspensión persistente y ACK separado; mantiene API19+, HUD, Sports LAN y firma Android permanente. Probado en emulador API22; prueba física pendiente. PHP/MySQL8, formularios HTTP, API y navegador pasan CI. ZIP acumulativo desde web0.4.16. NO instala automáticamente en hosting/TV. Los APK de pantalla/controles todavía no consumen el nuevo catálogo central; WhatsApp, operación offline integrada, eventos/ACKv2 y Overlay multiformato siguen pendientes. Alcance y pruebas: docs/PORTAL_CENTRAL_v0429.md. ZIP SHA256: 6662a1d64a5c2c77b58acf5c90116cb6c50830aa2156a38ee136f6ee56c58a12",
   "android": {
-    "asset": "2Cam_Digital_Signage_v0.4.17_DEBUG.apk",
-    "sha256": "e764723b0274cdfa764993f7d7bd89cb1f0d087313bb054b77a80ba421013dd3",
+    "asset": "2Cam_Digital_Signage_v0.4.18_DEBUG.apk",
+    "sha256": "8d22b3812e069edc8d5adada9c678e73a5e0c5909c8f5129d9646e7e1fd04e92",
     "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
-    "source_commit": "80f04eaea996539cdf5a7f5b616dae1c45daa672",
+    "source_commit": "19924b6d570395764c52921035bee5df868b765b",
     "envelope": {
-      "asset": "2CAM_APK_android-tv_v0.4.17-debug_RSA.zip",
-      "sha256": "22b7f8ce20d39e23c63eb7eca302fc486426f205468dcc3b57232ef2b6d69217"
+      "asset": "2CAM_APK_android-tv_v0.4.18-debug_RSA.zip",
+      "sha256": "125dab58e19a10f9815a017a1c79a9ce222d058707a6a65dcf7bf523be889209"
     }
   }
 }

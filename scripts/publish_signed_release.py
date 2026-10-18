@@ -21,7 +21,7 @@ meta = json.loads((bundle / 'release.json').read_text())
 repo = os.environ['GH_REPO']
 source = meta['source_commit']
 assert re.fullmatch(r'[a-f0-9]{40}', source)
-assert re.fullmatch(r'web-v0\.4\.(20|21|22|23|24|25|26|27)', meta['tag'])
+assert re.fullmatch(r'web-v0\.4\.(20|21|22|23|24|25|26|27|28|29)', meta['tag'])
 version = meta['tag'][5:]
 runs = api(f'repos/{repo}/actions/runs?head_sha={source}&per_page=30')['workflow_runs']
 assert any(r['name'] == 'Web portal CI' and r['conclusion'] == 'success' for r in runs), 'Source CI has not passed'
@@ -51,7 +51,7 @@ with tempfile.TemporaryDirectory() as temporary:
     if 'android' in meta:
         android = meta['android']
         apk = out / android['asset']
-        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16|17)_DEBUG\.apk', apk.name)
+        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16|17|18)_DEBUG\.apk', apk.name)
         chunks = sorted(bundle.glob('android-*.b64'))
         assert chunks
         apk.write_bytes(base64.b64decode(''.join(p.read_text().strip() for p in chunks)))
