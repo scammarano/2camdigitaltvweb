@@ -1,0 +1,8 @@
+const {chromium}=require('playwright');const assert=require('assert/strict');const fixture=JSON.parse(require('fs').readFileSync('.settings30-fixture.json'));
+(async()=>{const browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1280,height:720}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://127.0.0.1:8080/_ui-settings30.html');await page.locator('[data-bs-target="#cfg'+fixture.device_id+'"]').click();const root=page.locator('#cfg'+fixture.device_id+' [data-settings-tabs]');await root.locator('[data-tab-target="2"]').click();
+await root.locator('[name="overlay_duration_sec"]').fill('90');assert.equal(await root.locator('[name="auto_start"]').isVisible(),false);
+await root.locator('[data-tab-target="0"]').click();await root.locator('[data-tab-target="2"]').click();assert.equal(await root.locator('[name="overlay_duration_sec"]').inputValue(),'90');
+const choice=root.locator('[name="overlay_playlist_bottom"]');const option=choice.locator('option').filter({hasText:'Shared30 selectable'});await choice.selectOption(await option.getAttribute('value'));
+const preview=root.locator('[data-playlist-preview="overlay_playlist_bottom"]');assert.equal(await preview.isVisible(),true);assert.match(await preview.getAttribute('href'),/preview.php\?id=[0-9]+$/);
+assert.equal(await root.locator('[data-tab-target]').count(),8);await page.screenshot({path:'test-results/settings-tabs30-tv-browser.png'});assert.deepEqual(errors,[]);await browser.close();console.log('SETTINGS30_BROWSER_PASS tabs retain fields, shared selection, preview, TV viewport');})().catch(e=>{console.error(e);process.exit(1);});

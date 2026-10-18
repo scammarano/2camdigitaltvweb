@@ -29,7 +29,6 @@ function ds_config_validate(array $input):array {
   }
  }
  if(($out['enabled_modes']&(1<<($out['primary_mode']-1)))===0)throw new RuntimeException('El modo principal debe estar habilitado');
- if($out['overlay_duration_sec']>=$out['overlay_interval_sec'])throw new RuntimeException('Duración Overlay debe ser menor que intervalo');
  return $out;
 }
 function ds_config_form_input(array $post):array {
@@ -42,8 +41,9 @@ function ds_config_form_input(array $post):array {
 }
 function ds_config_form(array $c,int $tid,int $did):void {
  echo '<p class="alert alert-info">Las dimensiones se administran en Formatos de medios, no por pantalla. Requiere APK 0.4.15 o posterior.</p>';
+ $groups=ds_config_schema()['groups'];echo '<div data-settings-tabs><div class="nav nav-pills flex-nowrap overflow-auto gap-2 mb-3" role="tablist">';foreach($groups as $index=>$title)echo '<button type="button" class="nav-link" role="tab" data-tab-target="'.$index.'">'.h($title).'</button>';echo '</div>';
  $group='';foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];
-  if($group!==$f['group']){echo '<h5 class="border-bottom mt-4">'.h($f['group']).'</h5>';$group=$f['group'];}
+  if($group!==$f['group']){if($group!=='')echo '</section>';echo '<section data-tab-panel="'.array_search($f['group'],$groups,true).'"><h5 class="border-bottom mt-4">'.h($f['group']).'</h5>';$group=$f['group'];if($group==='Overlay')echo '<p>Durante cada aparición se reproduce la playlist con sus duraciones y transiciones. Al terminar la ventana visible, espera la pausa configurada antes de volver a aparecer.</p>';}
   if($f['type']==='bool'){echo '<label class="d-block mb-2"><input type="checkbox" name="'.h($k).'"'.($c[$k]?' checked':'').'> '.h($f['label']).'</label>';continue;}
   if($f['type']==='mask'){echo '<label>'.h($f['label']).'</label>';foreach(ds_config_schema()['modes'] as $id=>$label){$bit=1<<((int)$id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> '.h($label).'</label>';}continue;}
   echo '<label class="form-label">'.h($f['label']).'</label>';
@@ -53,9 +53,11 @@ function ds_config_form(array $c,int $tid,int $did):void {
    foreach(dball('SELECT p.id,p.name FROM playlists p JOIN devices d ON (d.tenant_id=p.tenant_id OR p.is_shared=1) WHERE d.id=? AND d.tenant_id=? AND (p.mode_mask & '.$modeBit.')<>0 AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?) ORDER BY p.id',[$did,$tid,$f['layout'],'any']) as $p)$options[(int)$p['id']]='#'.$p['id'].' · '.$p['name'];
    if($c[$k]>0&&!isset($options[$c[$k]]))$options[$c[$k]]='#'.$c[$k].' · No disponible';
    echo sel($k,$options,(string)$c[$k]);
+   echo '<a class="btn btn-outline-primary my-2" target="_blank" rel="noopener" data-playlist-preview="'.h($k).'" data-preview-base="'.h(url('preview.php?id=')).'" href="'.h(url('preview.php?id='.$c[$k])).'">▶ Probar lista seleccionada</a>';
   }elseif($f['type']==='enum')echo sel($k,$f['options'],(string)$c[$k]);
   else echo '<input class="form-control mb-2" type="number" name="'.h($k).'" min="'.$f['min'].'" max="'.$f['max'].'" value="'.(int)$c[$k].'" required>';
  }
+ echo '</section></div>';
 }
 function ds_config_validate_playlists(array $clean,int $tid,int $did):void {
  $d=dbone('SELECT orientation FROM devices WHERE id=? AND tenant_id=?',[$did,$tid]);if(!$d)throw new RuntimeException('Pantalla de otra empresa');

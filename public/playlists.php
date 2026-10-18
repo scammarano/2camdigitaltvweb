@@ -3,8 +3,12 @@ require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once RO
 $t=tenant();$error='';$ok='';$createdCopy=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
-  $target=post_tenant();$action=$_POST['action']??'create';if($action!=='share')require_permission('playlists.edit');
+  $target=post_tenant();$action=$_POST['action']??'create';if(!in_array($action,['share','assign_shared'],true))require_permission('playlists.edit');
   if($action==='share'){ds_content_share('playlists',(int)($_POST['id']??0),$target,isset($_POST['is_shared']));
+  }elseif($action==='assign_shared'){
+   require_once ROOT.'/app/playlist_assignment.php';$selection=(string)($_POST['screen_revision']??'');if(!preg_match('/^([1-9][0-9]*):([0-9]+)$/D',$selection,$m))throw new RuntimeException('Selecciona una pantalla');
+   $revision=ds_assign_readable_playlist($target,(int)$m[1],(int)($_POST['playlist_id']??0),(int)($_POST['mode']??0),(int)$m[2],(int)auth()['id']);
+   $ok='Lista asignada sin duplicar archivos. Revisión '.$revision.' pendiente de confirmación de la APK.';
   }elseif($action==='create'){
    $name=trim($_POST['name']??'');$ori=$_POST['orientation']??'';$layout=$_POST['layout_type']??'';
    if($name===''||!isset(layouts()[$layout])||!isset(orientations()[$ori]))throw new RuntimeException('Nombre/orientación/formato inválido');
@@ -104,6 +108,10 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
   echo '<details class="card card-body mb-3 ds-playlist" id="playlist-'.(int)$p['id'].'"'.($open?' open':'').'><summary><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span><strong>'.h($p['name']).'</strong><span class="ds-playlist-meta">'.h(ds_playlist_mode_names((int)$p['mode_mask'])).' · '.h(orientations()[$p['orientation']]??'').' · '.h(layouts()[$p['layout_type']]??'').' · '.count($playlistItems).' elementos</span></summary><div class="ds-playlist-content"><div class="d-flex justify-content-between flex-wrap gap-2"><p class="text-muted">Transición predeterminada: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</p><div class="d-flex flex-wrap gap-2">';
   if($editableList)echo '<button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#duplicate-playlist-'.(int)$p['id'].'">Duplicar / copiar a empresa</button> <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#'.$settingsId.'">Editar lista / empresa</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-playlists-'.(int)$p['id'].'">Eliminar lista</button>';
   echo '<a class="btn btn-sm btn-outline-primary" target="_blank" href="'.h(url('preview.php?id='.$p['id'])).'">Vista previa</a></div></div>';
+  if($scope!==null&&can('devices.edit')){
+   require_once ROOT.'/app/device_config.php';$screens=dball('SELECT id,name FROM devices WHERE tenant_id=? AND (orientation=? OR ?=?) ORDER BY name',[$scope,$p['orientation'],$p['orientation'],'any']);
+   if($screens){form_open();echo '<input type="hidden" name="action" value="assign_shared"><input type="hidden" name="tenant_id" value="'.$scope.'"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><label>Usar esta lista en una pantalla de la empresa seleccionada</label><select class="form-select mb-2" name="screen_revision" required><option value="">Seleccionar pantalla</option>';foreach($screens as $screen){$cfg=ds_config_for_device((int)$screen['id'],$scope);echo '<option value="'.$screen['id'].':'.$cfg['revision'].'">'.h($screen['name']).'</option>';}echo '</select><select class="form-select mb-2" name="mode">';foreach(ds_playlist_modes() as $bit=>$title)if(((int)$p['mode_mask']&$bit)&&($bit!==1||$p['layout_type']==='fullscreen'))echo '<option value="'.([1=>1,2=>2,4=>3,8=>4][$bit]).'">'.h($title).'</option>';echo '</select><button class="btn btn-outline-primary">Usar lista en pantalla · sin duplicar</button></form>';}
+  }
   if($editableList){
     ob_start();echo '<div class="modal fade" id="duplicate-playlist-'.(int)$p['id'].'" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5>Duplicar lista · '.h($p['name']).'</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body">';form_open();
     echo '<input type="hidden" name="action" value="duplicate"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'">';

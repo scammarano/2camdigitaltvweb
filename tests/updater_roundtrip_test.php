@@ -12,7 +12,7 @@ if($private===false)throw new RuntimeException('Test key generation failed');
 $public=openssl_pkey_get_details($private)['key'];file_put_contents($fixture.'/config/update-rsa-pubkey.pem',$public);
 $paths=json_decode(file_get_contents(__DIR__.'/update_files.json'),true,32,JSON_THROW_ON_ERROR);$hashes=[];
 foreach($paths as $path)$hashes[$path]=hash_file('sha256',$source.'/'.$path);
-$manifest=['product'=>'digital-signage','version'=>'0.4.29','min_version'=>'0.4.16','signature_algorithm'=>'RSA-SHA256','files'=>$hashes,'migrations'=>['database/migrations/0.4.29.php']];
+$manifest=['product'=>'digital-signage','version'=>'0.4.30','min_version'=>'0.4.16','signature_algorithm'=>'RSA-SHA256','files'=>$hashes,'migrations'=>['database/migrations/0.4.30.php']];
 $raw=json_encode($manifest,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
 if(!openssl_sign($raw,$signature,$private,OPENSSL_ALGO_SHA256))throw new RuntimeException('Test signing failed');
 $package=$fixture.'/update.zip';$zip=new ZipArchive();$zip->open($package,ZipArchive::CREATE|ZipArchive::OVERWRITE);
@@ -24,7 +24,7 @@ copy($package,$fixture.'/tampered.zip');$zip=new ZipArchive();$zip->open($fixtur
 $rejected=false;try{package_info($fixture.'/tampered.zip');}catch(RuntimeException $e){$rejected=str_contains($e->getMessage(),'alterado');}
 if(!$rejected)throw new RuntimeException('Tampered package accepted');
 $result=update_apply($package);
-if($result['version']!=='0.4.29'||trim(file_get_contents($fixture.'/version.txt'))!=='0.4.29')throw new RuntimeException('Version not installed');
+if($result['version']!=='0.4.30'||trim(file_get_contents($fixture.'/version.txt'))!=='0.4.30')throw new RuntimeException('Version not installed');
 foreach($hashes as $path=>$hash)if(hash_file('sha256',$fixture.'/'.$path)!==$hash)throw new RuntimeException('Installed file mismatch: '.$path);
 if(file_get_contents($fixture.'/config/config.php')!==file_get_contents($source.'/config/config.php'))throw new RuntimeException('Server config overwritten');
 $backup=$fixture.'/storage/backups/'.$result['backup'];$zip=new ZipArchive();$zip->open($backup);

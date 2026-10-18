@@ -8,6 +8,7 @@
   "app/config-schema.json",
   "app/device_config.php",
   "app/device_service.php",
+  "app/playlist_assignment.php",
   "app/domain.php",
   "app/github_updater.php",
   "app/layout.php",
@@ -84,5 +85,8 @@
   "public/tv.php",
   "public/updates.php",
   "public/users.php",
+  "public/assets/js/settings-tabs.js",
+  "database/migrations/0.4.30.php",
+  "docs/CONFIG_PESTANAS_OVERLAY_v0430.md",
   "version.txt"
 ]

@@ -11,7 +11,7 @@ expect($channel['options']===['stable'=>'Solo estables','debug'=>'Estables y pru
 foreach([1,2,3,4] as $mode){$v['primary_mode']=$mode;expect(ds_config_validate($v)['primary_mode']===$mode,'Four modes');}
 $v['enabled_modes']=7;rejects(fn()=>ds_config_validate($v));$v=ds_config_defaults();
 $v['overlay_opacity']=101;rejects(fn()=>ds_config_validate($v));$v=ds_config_defaults();
-$v['overlay_duration_sec']=$v['overlay_interval_sec'];rejects(fn()=>ds_config_validate($v));
+$v['overlay_duration_sec']=90;$v['overlay_interval_sec']=60;expect(ds_config_validate($v)['overlay_duration_sec']===90,'Window and subsequent pause are independent');
 $old=ds_config_validate(['primary_mode'=>3,'smart_app'=>'scoreboard','smart_header_pct'=>40,'enabled_modes'=>7]);
 expect($old['primary_mode']===4 && $old['enabled_modes']===15,'Legacy scoreboard migration');
 $now=new DateTimeImmutable('2026-10-16T12:00:00Z');

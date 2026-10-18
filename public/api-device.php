@@ -56,12 +56,21 @@ try {
     $app=substr((string)($p['app_version']??''),0,32);$mode=(int)($p['active_mode']??0);$cache=max(0,min(100000,(int)($p['cached_media']??0)));
     $free=isset($p['free_storage_bytes'])?max(0,(int)$p['free_storage_bytes']):null;
     $last=substr((string)($p['last_error']??''),0,250);
-    execsql('INSERT INTO device_health(device_id,tenant_id,app_version,active_mode,cached_media,free_storage_bytes,last_error,last_report) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE app_version=VALUES(app_version),active_mode=VALUES(active_mode),cached_media=VALUES(cached_media),free_storage_bytes=VALUES(free_storage_bytes),last_error=VALUES(last_error),last_report=VALUES(last_report)',[$did,$tid,$app,$mode,$cache,$free,$last]);
+    $localIp=(string)($p['local_ip']??'');if(!filter_var($localIp,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)||!preg_match('/^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)/D',$localIp))$localIp=null;
+    execsql('INSERT INTO device_health(local_ip,device_id,tenant_id,app_version,active_mode,cached_media,free_storage_bytes,last_error,last_report) VALUES(?,?,?,?,?,?,?,?,UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE local_ip=VALUES(local_ip),app_version=VALUES(app_version),active_mode=VALUES(active_mode),cached_media=VALUES(cached_media),free_storage_bytes=VALUES(free_storage_bytes),last_error=VALUES(last_error),last_report=VALUES(last_report)',[$localIp,$did,$tid,$app,$mode,$cache,$free,$last]);
     api_out(['ok'=>true,'server_time'=>gmdate('c')]);
   }
   if($op==='live'){
     if($_SERVER['REQUEST_METHOD']!=='GET')api_out(['error'=>'Método inválido'],405);
     api_out(['device_id'=>$did,'service'=>$service,'live'=>$service['suspended']?['widget_type'=>'queue','payload'=>['title'=>'Servicio suspendido']]:live_panel($tid,$did)]);
+  }
+  if($op==='preview'){
+    if($_SERVER['REQUEST_METHOD']!=='GET')api_out(['error'=>'Método inválido'],405);
+    if($service['suspended'])api_out(['error'=>'Servicio suspendido'],403);
+    $p=ds_content_record('playlists',(int)($_GET['playlist_id']??0),$tid);
+    if(!$p||!in_array($p['orientation'],['any',$d['orientation']],true))api_out(['error'=>'Lista no disponible o de orientación incompatible'],404);
+    $items=expanded($tid,(int)$p['id']);foreach($items as &$item)$item['url']=url('device-media.php?id='.$item['media_id']);unset($item);
+    api_out(['schema_version'=>3,'orientation'=>$d['orientation'],'media_formats'=>ds_formats_current(),'preview_layout'=>$p['layout_type'],'fallback'=>['playlist_id'=>(int)$p['id'],'items'=>$items]]);
   }
   if($op==='manifest'){
     if($_SERVER['REQUEST_METHOD']!=='GET')api_out(['error'=>'Método inválido'],405);
