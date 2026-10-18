@@ -10,7 +10,8 @@
   edit.addEventListener('click',function(){mode(true);if(fields.length)fields[0].focus();});
   fields.forEach(function(f){f.addEventListener('input',function(){form.dataset.dirty='1';});f.addEventListener('change',function(){form.dataset.dirty='1';});});
   cancel.addEventListener('click',function(){if(form.dataset.dirty==='1'&&!confirm('¿Descartar los cambios sin guardar de esta lista?'))return;form.reset();form.dataset.dirty='0';mode(false);});
-  form.addEventListener('submit',function(){
+  form.addEventListener('submit',function(event){
+   if(dirtyForms.some(function(f){return f!==form&&f.dataset.dirty==='1';})&&!confirm('Hay cambios sin guardar en otras listas. ¿Descartarlos y guardar solamente esta lista?')){event.preventDefault();return;}
    // One JSON input avoids PHP max_input_vars truncating a large grid.
    var rows={};fields.forEach(function(f){var m=/^rows\[(\d+)\]\[(\w+)\]$/.exec(f.name);if(m){rows[m[1]]=rows[m[1]]||{};rows[m[1]][m[2]]=f.value;}});
    var input=document.createElement('input');input.type='hidden';input.name='rows_json';input.value=JSON.stringify(rows);form.appendChild(input);
