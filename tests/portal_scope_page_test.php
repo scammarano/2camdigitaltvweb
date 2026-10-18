@@ -23,6 +23,13 @@ if($page==='playlists'){
  if($case==='selected')$fixtureFile='_ui-playlists.html';
 }
 if($page==='devices'&&$case!=='all'&&str_contains($html,'Screen B'))throw new RuntimeException('Other company screen visible');
+if(in_array($page,['media','devices','schedules','mode-schedules'],true)){
+ $column=$page==='media'?3:1;$cells=$xp->query('//table/tbody/tr/td['.$column.']');$companies=[];
+ foreach($cells as $cell)$companies[]=trim($cell->textContent);
+ if(!$companies)throw new RuntimeException('Missing scoped fixtures: '.$page);
+ if($case!=='all'&&count(array_filter($companies,static fn($name)=>$name!=='Company A')))throw new RuntimeException('Other company data visible: '.$page);
+ if($case==='all'&&!in_array('Company B',$companies,true))throw new RuntimeException('Global scope lost company B: '.$page);
+}
 if($page==='media'&&$case==='selected')$fixtureFile='_ui-media.html';
 if(isset($fixtureFile)){
  $zones=ds_media_zones();foreach($zones as &$z){$z['w']/=100;$z['h']/=100;}unset($z);

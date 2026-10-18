@@ -9,6 +9,11 @@ $_SESSION['active_tenant']=2;ck26(company_scope()===2,'Active company ignored');
 unset($_SESSION['active_tenant']);ck26(company_scope()===null,'Global scope not restored');
 $_SESSION['user']=['id'=>99,'tenant_id'=>1];$_SESSION['active_tenant']=2;ck26(company_scope('all')===1&&company_scope('2')===1&&company_scope()===1,'Tenant escaped scope');
 $_SESSION['user']=['id'=>100,'tenant_id'=>1];$_SESSION['active_tenant']=1;
+foreach([1,2] as $tid){
+ execsql("INSERT INTO schedules(tenant_id,device_id,playlist_id,days_mask,start_time,end_time) VALUES(?,?,?,127,'11:00','12:00')",[$tid,$tid,$tid]);
+ $sid=(int)db()->lastInsertId();execsql('INSERT INTO schedule_items(tenant_id,schedule_id,playlist_id,position) VALUES(?,?,?,0)',[$tid,$sid,$tid]);
+ execsql("INSERT INTO device_mode_blocks(tenant_id,device_id,mode,days_mask,start_time,end_time) VALUES(?,?,1,127,'11:00','12:00')",[$tid,$tid]);
+}
 execsql("INSERT INTO playlists(tenant_id,name,orientation,layout_type) VALUES(1,'Editor fixture','landscape','bottom')");$pid=(int)db()->lastInsertId();
 $mid=ds_media_white_separator(1,'landscape','bottom');$again=ds_media_white_separator(1,'landscape','bottom');ck26($again===$mid,'Separator duplicated unnecessarily');
 $m=dbone('SELECT * FROM media WHERE id=?',[$mid]);$bytes=file_get_contents(ROOT.'/storage/media/1/'.$m['filename']);$info=getimagesizefromstring($bytes);ck26($info[0]===1920&&$info[1]===216&&hash('sha256',$bytes)===$m['sha256'],'PNG dimensions/hash mismatch');

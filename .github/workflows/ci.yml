@@ -75,6 +75,8 @@ jobs:
             for scope in selected all tenant; do php tests/portal_scope_page_test.php "$page" "$scope"; done
           done
           php tests/portal_scope_page_test.php schedules screen
+          php tests/company_context_clear_test.php valid
+          php tests/company_context_clear_test.php forged
           php tests/apk_repository_test.php
       - uses: actions/setup-node@v4
         with:
