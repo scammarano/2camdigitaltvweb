@@ -27,6 +27,18 @@ reject29(fn()=>ds_app_snapshot(2,'turnos',1),'Foreign device config');
 $snapshot=ds_app_snapshot(1,'turnos',1);ok29($snapshot['tenant_id']===1&&!str_contains(json_encode($snapshot),'Sala ajena'),'Cross tenant config leaked');
 $rev=ds_app_config(1,'turnos')['revision'];ds_app_save_settings(1,'turnos',$rev,['title'=>'Mi empresa','request_whatsapp'=>'1']);reject29(fn()=>ds_app_save_settings(1,'turnos',$rev,['title'=>'stale']),'Stale config accepted');
 reject29(fn()=>ds_app_entity(1,'turnos',ds_app_config(1,'turnos')['revision'],['action'=>'delete','id'=>$room,'kind'=>'room']),'Parent with children deleted');
+// Public sports scope includes its venue teams/tournament, never sibling-venue data.
+$tournament=add29(1,'sports',['kind'=>'tournament','parent_id'=>$venue,'name'=>'Torneo 29']);
+$team=add29(1,'sports',['kind'=>'team','parent_id'=>$venue,'name'=>'Equipo 29']);
+$otherVenue=add29(1,'sports',['kind'=>'venue','name'=>'Club aislado']);$otherTeam=add29(1,'sports',['kind'=>'team','parent_id'=>$otherVenue,'name'=>'Equipo aislado']);
+$match=add29(1,'sports',['kind'=>'match','parent_id'=>$court,'name'=>'Partido 29','tournament_id'=>(string)$tournament,'home_team_id'=>(string)$team]);
+reject29(fn()=>add29(1,'sports',['kind'=>'match','parent_id'=>$court,'name'=>'Forged team','home_team_id'=>(string)$otherTeam]),'Wrong venue team');
+execsql("INSERT INTO devices(tenant_id,name,orientation,mode) VALUES(1,'Sports scope fixture','landscape',4)");$sportsDevice=(int)db()->lastInsertId();
+add29(1,'sports',['kind'=>'screen','parent_id'=>$court,'device_id'=>$sportsDevice,'name'=>'Pantalla Sports']);
+$public=ds_app_snapshot(1,'sports',$sportsDevice);$names=array_column($public['entities'],'name');ok29(in_array('Equipo 29',$names,true)&&in_array('Torneo 29',$names,true)&&!in_array('Equipo aislado',$names,true),'Sports scope missed team/tournament or leaked other venue');
+reject29(fn()=>assert_unlinked_before_transfer('devices',$sportsDevice,1),'Bound device transferable');
+ds_app_entity(1,'turnos',ds_app_config(1,'turnos')['revision'],['action'=>'save','kind'=>'room','id'=>$room,'name'=>'Sala 29']);reject29(fn()=>ds_app_snapshot(1,'turnos',1),'Inactive room served to screen');
+ds_app_entity(1,'turnos',ds_app_config(1,'turnos')['revision'],['action'=>'save','kind'=>'room','id'=>$room,'name'=>'Sala 29','enabled'=>'1']);
 $role=dbone('SELECT id FROM roles WHERE tenant_id=2 LIMIT 1');if(!$role){execsql("INSERT INTO roles(tenant_id,name,permissions_json) VALUES(2,'Operador29','[]')");$role=['id'=>(int)db()->lastInsertId()];}
 // Fixtures for HTTP revocation/tenant-bound API tests; credentials are ephemeral and never published.
 $token=bin2hex(random_bytes(32));execsql('INSERT INTO application_tokens(tenant_id,app,label,token_hash,created_by,created_at) VALUES(1,?,?,?,100,UTC_TIMESTAMP())',['turnos','CI29',hash('sha256',$token)]);$tokenId=(int)db()->lastInsertId();

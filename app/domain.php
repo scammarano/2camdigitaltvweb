@@ -29,6 +29,7 @@ function owned_edit_record(string $table,int $id):array{
 function assert_unlinked_before_transfer(string $table,int $id,int $old):void{
     if(in_array($table,['media','playlists'],true)&&dbone("SELECT id FROM $table WHERE id=? AND tenant_id=? AND is_shared=1",[$id,$old]))throw new RuntimeException('Deja de compartir el contenido antes de transferir su propiedad');
     if($table==='media'){
+        if(dbone("SELECT tenant_id FROM application_configs WHERE JSON_UNQUOTE(JSON_EXTRACT(settings_json,'$.logo_media_id'))=? LIMIT 1",[(string)$id]))throw new RuntimeException('Este medio es un logo de aplicación; reasígnalo antes de transferirlo');
         if(dbone("SELECT id FROM playlist_items WHERE tenant_id=? AND media_id=? AND kind='media' LIMIT 1",[$old,$id]))throw new RuntimeException('Este medio pertenece a una lista. Quítalo de las listas antes de cambiarlo de empresa.');
     }elseif($table==='playlists'){
         $checks=[
@@ -37,6 +38,7 @@ function assert_unlinked_before_transfer(string $table,int $id,int $old):void{
         ];
         foreach($checks as [$tab,$col])if(dbone("SELECT id FROM $tab WHERE tenant_id=? AND $col=? LIMIT 1",[$old,$id]))throw new RuntimeException('La lista está utilizada en contenidos, pantallas o programaciones. Desvincúlala antes de cambiar la empresa.');
     }elseif($table==='devices'){
+        if(dbone('SELECT id FROM application_entities WHERE device_id=? LIMIT 1',[$id]))throw new RuntimeException('Desvincula la pantalla de Turnos o Sports antes de transferirla');
         if(dbone('SELECT id FROM schedules WHERE tenant_id=? AND device_id=? LIMIT 1',[$old,$id]))throw new RuntimeException('La pantalla tiene programaciones. Elimínalas o reasígnalas antes de transferir la pantalla a otra empresa.');
     }
 }

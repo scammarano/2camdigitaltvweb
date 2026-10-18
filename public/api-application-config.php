@@ -9,11 +9,11 @@ try{
  if($d){$tid=(int)$d['tenant_id'];if(ds_service_state($tid,(int)$d['id'])['suspended'])app_out(['error'=>'Servicio de pantalla suspendido'],403);$snapshot=ds_app_snapshot($tid,$app,(int)$d['id']);}
  else{
   $t=dbone('SELECT * FROM application_tokens WHERE token_hash=? AND app=? AND revoked_at IS NULL',[$hash,$app]);if(!$t)app_out(['error'=>'Clave no autorizada'],401);
-  $owner=dbone('SELECT u.role,u.is_active,u.denied_permissions_json,r.permissions_json FROM users u LEFT JOIN roles r ON r.id=u.role_id AND r.tenant_id=u.tenant_id WHERE u.id=?',[(int)$t['created_by']]);
-  $denials=json_decode($owner['denied_permissions_json']??'[]',true)?:[];$perms=json_decode($owner['permissions_json']??'[]',true)?:[];if($owner&&$owner['role']==='admin'&&$owner['permissions_json']===null)$perms=array_keys(permission_names());
+  $owner=dbone('SELECT u.role,u.role_id,u.is_active,u.denied_permissions_json,r.permissions_json FROM users u LEFT JOIN roles r ON r.id=u.role_id AND r.tenant_id=u.tenant_id WHERE u.id=?',[(int)$t['created_by']]);
+  $denials=json_decode($owner['denied_permissions_json']??'[]',true)?:[];$perms=json_decode($owner['permissions_json']??'[]',true)?:[];if($owner&&$owner['role']==='admin'&&empty($owner['role_id']))$perms=array_keys(permission_names());
   if(!$owner||!(int)$owner['is_active']||($owner['role']!=='superadmin'&&(!in_array($app.'.manage',$perms,true)||!in_array('integrations.manage',$perms,true)||array_intersect([$app.'.manage','integrations.manage'],$denials))))app_out(['error'=>'Conexión revocada por permisos del propietario'],403);
   $snapshot=ds_app_snapshot((int)$t['tenant_id'],$app);
  }
  // No secrets or user directory in configuration exports.
  app_out($snapshot);
-}catch(RuntimeException $e){app_out(['error'=>$e->getMessage()],422);}catch(Throwable $e){log_event('application_api_error',['type'=>get_class($e)]);app_out(['error'=>'No se pudo consultar la configuración'],500);}
+}catch(PDOException $e){log_event('application_api_error',['type'=>get_class($e)]);app_out(['error'=>'No se pudo consultar la configuración'],500);}catch(RuntimeException $e){app_out(['error'=>$e->getMessage()],422);}catch(Throwable $e){log_event('application_api_error',['type'=>get_class($e)]);app_out(['error'=>'No se pudo consultar la configuración'],500);}
