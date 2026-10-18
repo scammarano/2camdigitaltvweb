@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/playlist_modes.php';require_permission('playlists.view');
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/playlist_modes.php';require_once ROOT.'/app/media_geometry.php';require_permission('playlists.view');
 render('Guía de listas y formatos',function(){
  echo '<p class="lead">Empresa → Orientación de la pantalla → Formato de lista → Medios compatibles → Asignación a pantalla y modo</p><p>Una barra y una franja son el mismo formato. La orientación siempre es la del televisor, no la forma del archivo recortado. Una franja lateral para una pantalla horizontal no se mezcla con una franja lateral para una pantalla vertical.</p>'.ds_playlist_modes_form().'<div class="row g-3">';
  $formats=ds_formats_current();
