@@ -42,6 +42,10 @@ function orientations():array{return ['landscape'=>'Pantalla horizontal','portra
 function transitions():array{return ['fade'=>'Fundido suave','slide-left'=>'Deslizar izquierda','slide-right'=>'Deslizar derecha','zoom'=>'Zoom suave','cut'=>'Corte inmediato'];}
 function safe_transition(string $raw,string $default='fade'):string{return isset(transitions()[$raw])?$raw:$default;}
 function safe_transition_ms($raw):int{return max(0,min(3000,(int)$raw));}
+function ds_media_duration($raw):int|float {
+    $n=is_numeric($raw)?(float)$raw:10.0;$n=max(0.1,min(86400.0,is_finite($n)?$n:10.0));
+    return floor($n)===$n?(int)$n:$n;
+}
 function sel(string $name,array $opts,?string $selected=''):string{
     $out='<select class="form-select mb-2" name="'.h($name).'">';foreach($opts as $id=>$label)$out.='<option value="'.h((string)$id).'" '.((string)$id===$selected?'selected':'').'>'.h($label).'</option>';return $out.'</select>';
 }
@@ -67,7 +71,7 @@ function expanded(int $tid,int $id,array &$stack=[],int $depth=0):array{
         for($i=0;$i<min(30,max(1,(int)$item['repeat_count']));$i++){
             if($item['kind']==='media'){
                 $m=dbone('SELECT id,name,mime,orientation,layout_type,sha256,size_bytes FROM media WHERE id=? AND tenant_id=?',[(int)$item['media_id'],$tid]);
-                if($m)$out[]=['media_id'=>(int)$m['id'],'name'=>$m['name'],'mime'=>$m['mime'],'orientation'=>$m['orientation'],'layout'=>$m['layout_type'],'sha256'=>$m['sha256'],'size'=>(int)$m['size_bytes'],'duration'=>max(1,(int)$item['duration_seconds']),'transition'=>($item['transition_effect']==='inherit'?$listEffect:safe_transition((string)$item['transition_effect'])),'transition_ms'=>($item['transition_ms']===null?$listMs:safe_transition_ms($item['transition_ms']))];
+                if($m)$out[]=['media_id'=>(int)$m['id'],'name'=>$m['name'],'mime'=>$m['mime'],'orientation'=>$m['orientation'],'layout'=>$m['layout_type'],'sha256'=>$m['sha256'],'size'=>(int)$m['size_bytes'],'duration'=>ds_media_duration($item['duration_seconds']),'transition'=>($item['transition_effect']==='inherit'?$listEffect:safe_transition((string)$item['transition_effect'])),'transition_ms'=>($item['transition_ms']===null?$listMs:safe_transition_ms($item['transition_ms']))];
             }else{
                 $children=expanded($tid,(int)$item['child_playlist_id'],$stack,$depth+1);
                 if($children){

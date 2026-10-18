@@ -6,7 +6,14 @@
 .ds-body .ds-playlist-grid td,.ds-body .ds-playlist-grid thead th{padding:10px 8px;overflow-wrap:normal}
 .ds-playlist-grid input{min-width:90px;max-width:135px}
 .ds-playlist-grid select{min-width:160px}
-.ds-playlist-grid td:first-child{min-width:155px;max-width:320px;overflow-wrap:anywhere}
+.ds-playlist-grid .ds-row-name{min-width:155px;max-width:280px;overflow-wrap:anywhere}
+.ds-row-thumbnail{min-width:96px;width:96px}
+.ds-row-thumbnail img,.ds-row-thumbnail video{width:88px;height:60px;object-fit:contain;background:#edf2f8;border:1px solid #d7e2f0;border-radius:6px;display:block}
+.ds-row-thumbnail small{display:block;font-size:10px;color:#59718d}
+.ds-row-list-preview{display:grid;place-items:center;width:88px;height:60px;background:#edf4fc;border-radius:6px;text-decoration:none}
+.ds-rows-values{padding:15px;background:#eef4fc;border:1px solid #d7e2f0;border-radius:9px;margin-bottom:12px}
+.ds-playlist input[data-row-select],.ds-playlist input[data-rows-all]{min-width:16px;width:16px;height:16px}
+.ds-body .ds-playlist-actions{white-space:normal;min-width:200px}
 .ds-playlist-grid input:disabled,.ds-playlist-grid select:disabled{opacity:1;color:#314c6d;background:#f6f8fc;border-color:transparent}
 .ds-playlist.is-editing .ds-playlist-grid{border-left:3px solid #245ad4}
 .ds-playlist-actions{white-space:nowrap}

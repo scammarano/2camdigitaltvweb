@@ -32,6 +32,7 @@ if(in_array($page,['media','devices','schedules','mode-schedules'],true)){
 }
 if($page==='media'&&$case==='selected')$fixtureFile='_ui-media.html';
 if(isset($fixtureFile)){
+ file_put_contents($root.'/.browser-session.json',json_encode(['session'=>session_id()]));chmod($root.'/.browser-session.json',0600);
  $zones=ds_media_zones();foreach($zones as &$z){$z['w']/=100;$z['h']/=100;}unset($z);
  $data='window.DSMediaFormats='.json_encode(['settings'=>ds_formats_current(),'zones'=>$zones],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';window.DSApplyMediaFormats(window.DSMediaFormats.settings);';
  $html=str_replace('<script src="'.url('media-formats-data.php').'"></script>','<script>'.$data.'</script>',$html);

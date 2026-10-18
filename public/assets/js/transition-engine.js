@@ -31,5 +31,6 @@
    if(old.tagName==='VIDEO')old.pause();old.remove();this.current=node;
   }
  }
- global.DSSlides={SlideDeck};
+ const mediaMs=item=>{const n=Number(item.duration??10);return Math.round(Math.max(0.1,Math.min(86400,Number.isFinite(n)?n:10))*1000);};
+ global.DSSlides={SlideDeck,mediaMs};
 })(window);

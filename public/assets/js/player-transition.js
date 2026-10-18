@@ -44,14 +44,15 @@
      if(serial!==displaySerial){URL.revokeObjectURL(objectUrl);return;}
      region(item);
      const previousUrl=deck.current?.dataset?.objectUrl||null;
-     await deck.present(el,item.transition||'fade',Number(item.transition_ms??600));
+     const shownAt=performance.now(),exposure=DSSlides.mediaMs(item);
+     await deck.present(el,item.transition||'fade',Math.min(Number(item.transition_ms??600),video===true?3000:exposure/2));
      if(serial!==displaySerial){URL.revokeObjectURL(objectUrl);return;}
      // Keep this object URL while on screen; prior nodes release their URL after transition.
      if(previousUrl)URL.revokeObjectURL(previousUrl);
      el.dataset.objectUrl=objectUrl;
      state.textContent=source+' · '+(index%items.length+1)+'/'+items.length+' · '+(item.name||'')+' · precarga activa';
      if(video){el.onended=next;el.play().catch(()=>{state.textContent='Autoplay bloqueado. Abre el reproductor con interacción del usuario.';});}
-     else timer=setTimeout(next,Math.max(1,Number(item.duration)||10)*1000);
+     else timer=setTimeout(next,Math.max(0,exposure-(performance.now()-shownAt)));
      prefetchNext();
    }catch(e){if(objectUrl)URL.revokeObjectURL(objectUrl);if(serial!==displaySerial)return;state.textContent='No se pudo mostrar '+(item.name||'medio')+': '+e.message;timer=setTimeout(next,3000);}
  }
