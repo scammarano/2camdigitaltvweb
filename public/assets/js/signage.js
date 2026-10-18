@@ -3,16 +3,23 @@
  'use strict';
  var button=document.getElementById('ds-menu-toggle');
  var backdrop=document.getElementById('ds-backdrop');
+ var desktop=window.matchMedia('(min-width:992px)');
+ function updateToggle(){if(!button)return;var open=desktop.matches?!document.body.classList.contains('ds-nav-hidden'):document.body.classList.contains('ds-nav-open');button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'Ocultar menú':'Mostrar menú');button.title=open?'Ocultar menú':'Mostrar menú';}
+ try{if(localStorage.getItem('ds-nav-hidden')==='1')document.body.classList.add('ds-nav-hidden');}catch(ignore){}
  function closeNav(){
   document.body.classList.remove('ds-nav-open');
-  if(button)button.setAttribute('aria-expanded','false');
+  updateToggle();
   if(backdrop)backdrop.hidden=true;
  }
  if(button)button.addEventListener('click',function(){
+  if(desktop.matches){var hidden=document.body.classList.toggle('ds-nav-hidden');try{localStorage.setItem('ds-nav-hidden',hidden?'1':'0');}catch(ignore){}updateToggle();return;}
   var open=document.body.classList.toggle('ds-nav-open');
   button.setAttribute('aria-expanded',String(open));
   if(backdrop)backdrop.hidden=!open;
+  updateToggle();
  });
+ updateToggle();
+ window.addEventListener('resize',function(){if(desktop.matches){document.body.classList.remove('ds-nav-open');if(backdrop)backdrop.hidden=true;}updateToggle();});
  if(backdrop)backdrop.addEventListener('click',closeNav);
  document.addEventListener('keydown',function(ev){if(ev.key==='Escape')closeNav();});
  var anchors=document.querySelectorAll('.ds-sidebar a');

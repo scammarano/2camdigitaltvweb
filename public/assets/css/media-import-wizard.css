@@ -43,6 +43,10 @@
 .ds-import-review-row:last-child{border-bottom:0}
 .ds-import-review-info{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere;gap:3px}
 .ds-import-review-info strong{font-size:13px}
+.ds-import-review-info{flex:1}
+.ds-import-review-row>.ds-preview-mini-screen{width:75px;min-width:75px;flex:none;margin:0}
+.ds-import-review-row>.ds-preview-mini-screen[data-orientation="portrait"]{width:35px;min-width:35px}
+.ds-import-zone-grid [data-import-zone-size]{font-size:11px;color:#466480}
 .ds-import-review-info small{font-size:11px;color:#5b7288}
 .ds-import-review-row.invalid{border-left:4px solid #cc3645;background:#fff5f6}
 .ds-import-review-row.valid{border-left:4px solid #1c9956}

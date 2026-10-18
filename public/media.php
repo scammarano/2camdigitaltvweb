@@ -1,10 +1,13 @@
 <?php
-require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/media_geometry.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/media_bulk.php';require_permission('media.view');
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/media_geometry.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/media_bulk.php';require_once ROOT.'/app/media_separator.php';require_permission('media.view');
 $t=tenant();$error='';$ok='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
   require_permission('media.edit');$action=$_POST['action']??'upload';$target=post_tenant();
-  if(in_array($action,['bulk_copy','bulk_move','bulk_classify'],true)){
+  if($action==='white_separator'){
+   ds_media_white_separator($target,(string)($_POST['orientation']??''),(string)($_POST['layout_type']??''));
+   $ok='Separador blanco disponible en la biblioteca. Puedes añadirlo y repetirlo en las listas compatibles.';
+  }elseif(in_array($action,['bulk_copy','bulk_move','bulk_classify'],true)){
    if((string)($_POST['confirm_bulk']??'')!=='APLICAR')throw new RuntimeException('Escribe APLICAR para confirmar la operación masiva.');
    $selection=ds_bulk_ids($_POST['media_ids']??[]);
    $scopeSelected=company_scope(isset($_POST['filter_company'])?(string)$_POST['filter_company']:null);
@@ -95,7 +98,7 @@ $query=trim((string)($_GET['q']??''));$fOri=(string)($_GET['orientation']??'');$
 $fMinMb=(string)($_GET['min_mb']??'');$fMaxMb=(string)($_GET['max_mb']??'');
 $fWidth=(string)($_GET['width_px']??'');$fHeight=(string)($_GET['height_px']??'');
 $fSort=(string)($_GET['sort']??'newest');$fOrder=(string)($_GET['order']??'desc');
-$scope=company_scope(isset($_GET['company'])?(string)$_GET['company']:(string)tenant());
+$scope=company_scope(isset($_GET['company'])?(string)$_GET['company']:null);
 $where='1=1';$params=[];if($scope!==null){$where.=' AND m.tenant_id=?';$params[]=$scope;}
 if($query!==''){$where.=' AND m.name LIKE ?';$params[]='%'.str_replace(['%','_'],['\\%','\\_'],substr($query,0,120)).'%';}
 if($fOri!=='' && isset(orientations()[$fOri])){$where.=' AND m.orientation=?';$params[]=$fOri;}
@@ -118,10 +121,12 @@ if(!isset($sorts[$fSort]))$fSort='newest';
 if(!in_array($fOrder,['asc','desc'],true))$fOrder='desc';
 $rows=dball('SELECT m.*,t.name AS company_name FROM media m JOIN tenants t ON t.id=m.tenant_id WHERE '.$where.' ORDER BY '.$sorts[$fSort].' '.strtoupper($fOrder).', m.id DESC',$params);
 render('Biblioteca de medios',function()use($rows,$error,$ok,$query,$fOri,$fLayout,$fType,$scope,$fMinMb,$fMaxMb,$fWidth,$fHeight,$fSort,$fOrder){
- echo '<link rel="stylesheet" href="'.h(url('assets/css/media-geometry.css')).'?v=0420"><link rel="stylesheet" href="'.h(url('assets/css/media-bulk.css')).'?v=014"><link rel="stylesheet" href="'.h(url('assets/css/media-library-visual.css')).'?v=014"><script defer src="'.h(url('assets/js/media-geometry.js')).'?v=0420"></script><script defer src="'.h(url('assets/js/media-bulk.js')).'?v=014"></script><link rel="stylesheet" href="'.h(url('assets/css/media-import-wizard.css')).'?v=0420"><script defer src="'.h(url('assets/js/media-import-wizard.js')).'?v=0420"></script>';
+ echo '<link rel="stylesheet" href="'.h(url('assets/css/media-geometry.css')).'?v=0420"><link rel="stylesheet" href="'.h(url('assets/css/media-bulk.css')).'?v=014"><link rel="stylesheet" href="'.h(url('assets/css/media-library-visual.css')).'?v=014"><script defer src="'.h(url('assets/js/media-geometry.js')).'?v=0420"></script><script defer src="'.h(url('assets/js/media-bulk.js')).'?v=014"></script><link rel="stylesheet" href="'.h(url('assets/css/media-import-wizard.css')).'?v=0426"><script defer src="'.h(url('assets/js/media-import-wizard.js')).'?v=0426"></script>';
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
  if(can('media.edit')){
-   echo '<div class="ds-actions"><button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#upload">+ Cargar medios (asistente)</button> <a class="btn btn-outline-primary" href="'.h(url('media-guide.php')).'">Guía visual: 10 tamaños</a></div>';
+   echo '<div class="ds-actions"><button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#upload">+ Cargar medios (asistente)</button><button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#white-separator">+ Separador blanco</button> <a class="btn btn-outline-primary" href="'.h(url('media-guide.php')).'">Guía visual: 10 tamaños</a></div>';
+   echo '<div class="modal fade" id="white-separator" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Crear separador blanco</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body">';form_open();
+   echo '<input type="hidden" name="action" value="white_separator">'.company_select($scope??0).'<label>Orientación de pantalla</label>'.sel('orientation',['landscape'=>'Pantalla horizontal','portrait'=>'Pantalla vertical'],'landscape').'<label>Presentación</label>'.sel('layout_type',layouts(),'fullscreen').'<p class="ds-hint">Imagen PNG blanca con las medidas centrales del formato elegido. Su duración se define en cada lista. Si ya existe, se reutiliza.</p><button class="btn btn-primary">Crear medio blanco</button></form></div></div></div></div>';
    echo '<div class="modal fade ds-import-modal" id="upload" tabindex="-1" aria-labelledby="ds-import-title" aria-hidden="true"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="ds-import-title">Cargar y clasificar medios</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div><div class="modal-body">';
    echo '<section data-media-import data-upload-url="'.h(url('media-wizard-upload.php')).'" data-csrf="'.h(csrf()).'">';
    echo '<div data-import-select><p>Selecciona todos tus artes, fotografías o videos. Después podrás ver cada uno y asignarle <strong>empresa, pantalla y presentación</strong> por separado, antes de importar.</p><label class="form-label" for="ds-import-file">Seleccionar varios archivos</label><input class="form-control" type="file" id="ds-import-file" data-import-files multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"><p class="ds-import-hint mt-2">Hasta 40 MB por archivo. Puedes agregar archivos en varias selecciones. Se importarán uno a uno después de la revisión; no se subirán al seleccionarlos.</p></div>';
@@ -180,7 +185,7 @@ render('Biblioteca de medios',function()use($rows,$error,$ok,$query,$fOri,$fLayo
  echo '<tr>'.(can('media.edit')?'<td class="ds-bulk-select-col"><input class="form-check-input" type="checkbox" data-bulk-id form="ds-bulk-form" name="media_ids[]" value="'.(int)$m['id'].'" aria-label="Seleccionar '.h((string)$m['name']).'"></td>':'<td></td>')
   .'<td class="ds-media-preview-cell"><a class="ds-media-preview-frame" href="'.h($sourceLink).'" target="_blank" rel="noopener" title="Abrir medio original">'.$mediaPreview.'</a></td>'
   .'<td>'.h($m['company_name']).'</td><td class="ds-media-filename">'.h($m['name']).'</td><td>'.h($m['mime']).'</td><td>'.h($screenName).'</td><td>'.$presentation.'</td>'
-  .'<td>'.h((string)($m['width_px']??'—')).' × '.h((string)($m['height_px']??'—')).'</td><td>'.round((int)$m['size_bytes']/1048576,2).' MB</td>'
+  .'<td><strong>'.h((string)($m['width_px']??'—')).' × '.h((string)($m['height_px']??'—')).' px</strong>'.($guide?'<small class="d-block text-muted">Formato: '.$guide['width'].' × '.$guide['height'].' px</small>':'').($guide&&(int)$m['width_px']>0&&(int)$m['height_px']>0&&!ds_media_geometry_check((int)$m['width_px'],(int)$m['height_px'],$guide)?'<small class="d-block text-danger">Proporción incompatible</small>':'').'</td><td>'.round((int)$m['size_bytes']/1048576,2).' MB</td>'
   .'<td><a class="btn btn-sm btn-outline-secondary" href="'.h($sourceLink).'" target="_blank" rel="noopener">Ver</a> ';
  if(can('media.edit'))echo '<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#'.$dlg.'">Editar</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-media-'.(int)$m['id'].'">Eliminar</button>';
  echo '</td></tr>';

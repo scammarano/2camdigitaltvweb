@@ -85,7 +85,8 @@ function expanded(int $tid,int $id,array &$stack=[],int $depth=0):array{
 /** A null company filter means all companies and is allowed to SUPERADMIN only. */
 function company_scope(?string $requested=null):?int {
     if (!is_super()) return tenant();
-    if ($requested===null || $requested==='' || $requested==='all') return null;
+    if ($requested===null) $requested=isset($_SESSION['active_tenant'])?(string)$_SESSION['active_tenant']:'all';
+    if ($requested==='' || $requested==='all') return null;
     if (!ctype_digit($requested) || (int)$requested<1) throw new RuntimeException('Filtro de empresa inválido');
     $company=(int)$requested;
     if (!dbone('SELECT id FROM tenants WHERE id=?',[$company]))throw new RuntimeException('Empresa no encontrada');

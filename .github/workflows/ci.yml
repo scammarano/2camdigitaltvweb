@@ -55,7 +55,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-          extensions: pdo_mysql, zip, openssl
+          extensions: pdo_mysql, zip, openssl, dom
       - name: Configure isolated database and verify tenant isolation
         run: |
           php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
@@ -70,4 +70,23 @@ jobs:
           php tests/playlist_page_test.php view
           php tests/playlist_page_test.php copy
           php tests/playlist_page_test.php forbidden
+          php tests/playlist_editor_test.php
+          for page in playlists media devices schedules mode-schedules index; do
+            for scope in selected all tenant; do php tests/portal_scope_page_test.php "$page" "$scope"; done
+          done
+          php tests/portal_scope_page_test.php schedules screen
           php tests/apk_repository_test.php
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Browser checks and visual evidence
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+          php -S 127.0.0.1:8080 -t public >test-results/php-server.log 2>&1 &
+          node tests/playlist_editor_browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portal-editor-visual-checks
+          path: test-results/

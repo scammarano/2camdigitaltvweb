@@ -87,7 +87,7 @@ $rows=dball('SELECT s.*,d.name device_name,d.orientation device_orientation,t.na
 $poolWhere=is_super()?'1=1':'tenant_id=?';$poolParams=is_super()?[]:[tenant()];
 $devices=dball('SELECT id,tenant_id,name,orientation FROM devices WHERE '.$poolWhere.' ORDER BY name',$poolParams);
 $lists=dball('SELECT id,tenant_id,name,orientation,layout_type FROM playlists WHERE '.$poolWhere.' ORDER BY name',$poolParams);
-$allItems=dball('SELECT i.schedule_id,i.playlist_id,i.position,p.name FROM schedule_items i JOIN playlists p ON p.id=i.playlist_id AND p.tenant_id=i.tenant_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.schedule_id,i.position,i.id',$poolParams);
+$allItems=dball('SELECT i.schedule_id,i.playlist_id,i.position,p.name FROM schedule_items i JOIN playlists p ON p.id=i.playlist_id AND p.tenant_id=i.tenant_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.schedule_id,i.position,i.id',$scope===null?[]:[$scope]);
 $bySchedule=[];foreach($allItems as $item)$bySchedule[(int)$item['schedule_id']][]=['id'=>(int)$item['playlist_id'],'name'=>$item['name']];
 // Some legacy blocks have only schedules.playlist_id and no schedule_items.
 foreach($rows as $r)if(empty($bySchedule[(int)$r['id']])) {

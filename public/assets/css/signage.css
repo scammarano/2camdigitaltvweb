@@ -30,7 +30,9 @@ a.ds-company-chip:hover{background:#e0eefd;color:#194a88}.ds-chip-dot{width:7px;
 .ds-profile{display:flex;align-items:center;gap:10px;padding-left:16px;border-left:1px solid var(--ds-border)}.ds-avatar{width:35px;height:35px;background:#dbe8ff;color:#2452a4;display:grid;place-items:center;border-radius:10px;font-size:14px;font-weight:850}
 .ds-profile-name{font-size:12px;font-weight:800;color:#2b3e5a;white-space:nowrap}.ds-profile-name small{display:block;font-size:10px;font-weight:500;color:var(--ds-muted)}
 .ds-logout{width:34px;height:34px;border:1px solid var(--ds-border);border-radius:9px;display:grid;place-items:center;color:#617089;text-decoration:none}.ds-logout:hover{color:#bb3b4b;border-color:#ebb7c0;background:#fff5f6}
-.ds-menu-toggle{display:none;border:1px solid var(--ds-border);background:white;width:38px;height:38px;border-radius:9px;place-items:center;color:var(--ds-text)}
+.ds-menu-toggle{display:grid;flex:none;border:1px solid var(--ds-border);background:white;width:38px;height:38px;border-radius:9px;place-items:center;color:var(--ds-text)}
+.ds-company-clear{margin:0}
+@media(min-width:992px){.ds-nav-hidden .ds-sidebar{display:none}}
 .ds-page-heading{padding:clamp(20px,3vw,36px) clamp(18px,3vw,42px) 17px}.ds-page-heading h1{font-size:clamp(25px,2.7vw,32px);font-weight:780;letter-spacing:-.9px;color:var(--ds-text);margin:6px 0}
 .ds-page-heading p{font-size:13px;color:var(--ds-muted);margin:0;max-width:760px}.ds-eyebrow{font-size:10px;font-weight:850;color:#8797af;letter-spacing:1.15px;text-transform:uppercase}.ds-eyebrow span{color:#bcc7d7;margin:0 6px}
 .ds-content{padding:9px clamp(18px,3vw,42px) 40px;max-width:1800px;margin:0 auto;min-height:50vh}.ds-content>.card,.ds-content>.row,.ds-content>.alert{margin-bottom:18px}

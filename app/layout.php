@@ -100,7 +100,11 @@ function page(string $title,string $content):void {
     }
     $me=auth();$role=is_super()?'SUPERADMIN':'Usuario de empresa';
     $company=(string)tenant();$companyRow=dbone('SELECT name FROM tenants WHERE id=?',[(int)$company]);$companyName=$companyRow['name']??('Empresa #'.$company);
-    if(is_super())$companyText='<a href="'.h(url('tenants.php')).'" class="ds-company-chip" title="Cambiar empresa"><span class="ds-chip-dot"></span>'.h($companyName).' <span class="ds-chip-arrow">⌄</span></a>';
+    if(is_super()){
+        $hasCompany=isset($_SESSION['active_tenant']);
+        $companyText='<a href="'.h(url('tenants.php')).'" class="ds-company-chip" title="Cambiar empresa"><span class="ds-chip-dot"></span>'.h($hasCompany?$companyName:'Todas las empresas').' <span class="ds-chip-arrow">⌄</span></a>';
+        if($hasCompany)$companyText.='<form method="post" action="'.h(url('tenants.php')).'" class="ds-company-clear"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><button class="btn btn-sm btn-outline-secondary" name="clear_company" value="1" title="Quitar la empresa de trabajo y ver todas">Ver todas</button></form>';
+    }
     else $companyText='<span class="ds-company-chip"><span class="ds-chip-dot"></span>'.h($companyName).'</span>';
     $v=is_file(ROOT.'/version.txt')?trim((string)file_get_contents(ROOT.'/version.txt')):'0.3.x';
     $description=$descriptions[$current]??'Administración de Digital Signage.';

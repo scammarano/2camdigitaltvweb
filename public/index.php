@@ -1,8 +1,8 @@
 <?php
-require __DIR__.'/_init.php';$t=tenant();
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';$scope=company_scope();
 $stats=[];
 foreach(['Medios'=>['media','image','media.php'],'Listas'=>['playlists','playlist','playlists.php'],'Pantallas'=>['devices','screen','devices.php'],'Programaciones'=>['schedules','calendar','schedules.php']] as $name=>[$table,$icon,$href]) {
-    $stats[]=['label'=>$name,'count'=>(int)dbone("SELECT COUNT(*) n FROM $table WHERE tenant_id=?",[$t])['n'],'icon'=>$icon,'href'=>$href];
+    $stats[]=['label'=>$name,'count'=>(int)dbone("SELECT COUNT(*) n FROM $table".($scope===null?'':' WHERE tenant_id=?'),$scope===null?[]:[$scope])['n'],'icon'=>$icon,'href'=>$href];
 }
 render('Dashboard',function()use($stats){
     echo '<div class="row g-3 ds-dashboard-stats">';

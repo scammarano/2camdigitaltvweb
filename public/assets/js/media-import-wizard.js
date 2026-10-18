@@ -77,7 +77,7 @@ function init(root){
  }
  function updateFields(){if(!queue.length)return;var item=selected();
   root.querySelectorAll('[data-import-orientation]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.importOrientation===item.orientation));});
-  root.querySelectorAll('[data-import-layout]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.importLayout===item.layout));var d=b.querySelector('.ds-preview-mini-screen');if(d)d.setAttribute('data-orientation',item.orientation);});
+  root.querySelectorAll('[data-import-layout]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.importLayout===item.layout));var d=b.querySelector('.ds-preview-mini-screen');if(d)d.setAttribute('data-orientation',item.orientation);var size=b.querySelector('[data-import-zone-size]');if(!size){size=el('small');size.setAttribute('data-import-zone-size','');b.appendChild(size);}var dimensions=target(item.orientation,b.dataset.importLayout);size.textContent=dimensions.w+' × '+dimensions.h+' px';});
   var g=by(root,'diagram');g.dataset.orientation=item.orientation;g.dataset.layout=item.layout;
   var t=target(item.orientation,item.layout);
   by(root,'geometry-title').textContent=t.screen.name+' · '+t.zone.name;
@@ -129,6 +129,7 @@ function init(root){
    var left=el('div','ds-import-review-info'),title=el('strong','',String(i+1)+'. '+item.name);
    var d=target(item.orientation,item.layout),desc=el('small','',(item.w&&item.h?item.w+' × '+item.h+' px · ':'')+d.screen.name+' · '+d.zone.name+' · '+d.w+' × '+d.h+' px');
    var note=el('small','',item.skip?'Omitido':item.status==='uploaded'?'Cargado correctamente':item.status==='error'?'Último intento falló: '+item.error:result.message);
+   var diagram=el('div','ds-preview-mini-screen');diagram.dataset.orientation=item.orientation;diagram.dataset.layout=item.layout;diagram.setAttribute('role','img');diagram.setAttribute('aria-label',d.screen.name+' · '+d.zone.name);diagram.appendChild(el('span','ds-mini-selected'));row.appendChild(diagram);
    left.append(title,desc,note);row.appendChild(left);
    var edit=el('button','btn btn-sm btn-outline-primary','Editar');edit.type='button';edit.addEventListener('click',function(){setCurrent(i);});row.appendChild(edit);list.appendChild(row);
    if(item.skip)skipped++;else if(!result.ok)errors++;else if(item.status!=='uploaded')valid++;

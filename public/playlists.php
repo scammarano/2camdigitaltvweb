@@ -1,5 +1,5 @@
 <?php
-require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/playlist_copy.php';require_permission('playlists.view');
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/cleanup.php';require_once ROOT.'/app/playlist_copy.php';require_once ROOT.'/app/playlist_editor.php';require_once ROOT.'/app/media_separator.php';require_permission('playlists.view');
 $t=tenant();$error='';$ok='';$createdCopy=null;
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
@@ -25,10 +25,19 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    execsql('UPDATE playlists SET tenant_id=?,name=?,transition_effect=?,transition_ms=? WHERE tenant_id=? AND id=?',[$target,$name,$effect,$ms,$old,$id]);
   }else{
    $pid=(int)($_POST['playlist_id']??0);$parent=dbone('SELECT * FROM playlists WHERE id=? AND tenant_id=?',[$pid,$target]);if(!$parent)throw new RuntimeException('Lista inválida');
-   if($action==='add'){
+   if($action==='save_grid'){
+    $rows=isset($_POST['rows_json'])?json_decode((string)$_POST['rows_json'],true,16,JSON_THROW_ON_ERROR):(array)($_POST['rows']??[]);
+    if(!is_array($rows))throw new RuntimeException('Contenido de tabla inválido');
+    ds_playlist_save_grid($target,$pid,$rows,(string)($_POST['stamp']??''));
+   }elseif($action==='separator'){
+    $mid=ds_media_white_separator($target,(string)$parent['orientation'],(string)$parent['layout_type']);
+    $row=dbone('SELECT COALESCE(MAX(position),0) n FROM playlist_items WHERE tenant_id=? AND playlist_id=?',[$target,$pid]);
+    execsql("INSERT INTO playlist_items(tenant_id,playlist_id,kind,media_id,position,duration_seconds) VALUES(?,?,'media',?,?,1)",[$target,$pid,$mid,(int)$row['n']+10]);
+   }elseif($action==='add'){
     $choice=explode(':',(string)($_POST['choice']??''),2);$kind=$choice[0]??'';$id=(int)($choice[1]??0);
     $table=$kind==='media'?'media':($kind==='playlist'?'playlists':null);if(!$table)throw new RuntimeException('Tipo inválido');
     $child=dbone("SELECT * FROM $table WHERE id=? AND tenant_id=?",[$id,$target]);if(!$child||!compatible($parent,$child))throw new RuntimeException('El contenido no tiene la orientación o el formato adecuados');
+    if($kind==='playlist'&&!expanded($target,$id))throw new RuntimeException('La lista seleccionada está vacía. Añádele medios antes de insertarla.');
     if($kind==='playlist')validate_graph($target,$pid,$id);
     $row=dbone('SELECT COALESCE(MAX(position),0) n FROM playlist_items WHERE tenant_id=? AND playlist_id=?',[$target,$pid]);$pos=(int)$row['n']+10;
     $effect=(string)($_POST['transition_effect']??'inherit');if($effect!=='inherit'&&!isset(transitions()[$effect]))throw new RuntimeException('Transición inválida');
@@ -62,11 +71,12 @@ if($query!==''){$where.=' AND p.name LIKE ?';$params[]='%'.str_replace(['%','_']
 if($fOri!=='' && isset(orientations()[$fOri])){$where.=' AND p.orientation=?';$params[]=$fOri;}
 if($fLayout!=='' && isset(layouts()[$fLayout])){$where.=' AND p.layout_type=?';$params[]=$fLayout;}
 $filtered=dball('SELECT p.*,t.name company_name FROM playlists p JOIN tenants t ON t.id=p.tenant_id WHERE '.$where.' ORDER BY t.name,p.name',$params);
-$poolWhere=is_super()?'1=1':'tenant_id=?';$poolParams=is_super()?[]:[tenant()];
+$poolWhere=$scope===null?'1=1':'tenant_id=?';$poolParams=$scope===null?[]:[$scope];
 $lists=dball('SELECT * FROM playlists WHERE '.$poolWhere.' ORDER BY name',$poolParams);
 $media=dball('SELECT * FROM media WHERE '.$poolWhere.' ORDER BY name',$poolParams);
 $items=dball('SELECT i.*,p.name child_name,m.name media_name FROM playlist_items i LEFT JOIN playlists p ON p.id=i.child_playlist_id AND p.tenant_id=i.tenant_id LEFT JOIN media m ON m.id=i.media_id AND m.tenant_id=i.tenant_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.playlist_id,i.position,i.id',$scope===null?[]:[$scope]);
 render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$error,$ok,$query,$fOri,$fLayout,$scope,$createdCopy){
+ echo '<link rel="stylesheet" href="'.h(url('assets/css/playlist-editor.css')).'?v=0426"><script defer src="'.h(url('assets/js/playlist-editor.js')).'?v=0426"></script>';
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
  if($createdCopy)echo '<a class="btn btn-primary mb-3" href="'.h(url('playlists.php?company='.$createdCopy['company'].'#playlist-'.$createdCopy['id'])).'">Ver copia en la empresa de destino</a>';
  if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0);field('name','Nombre');echo '<label>Orientación</label>'.sel('orientation',orientations(),'landscape').'<label>Formato</label>'.sel('layout_type',layouts()).'<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
@@ -75,7 +85,9 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
  foreach($filtered as $p){
   $dsModals='';
   $settingsId='playlist-settings-'.(int)$p['id'];
-  echo '<div class="card card-body mb-3" id="playlist-'.(int)$p['id'].'"><div class="d-flex justify-content-between flex-wrap gap-2"><h5><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span>'.h($p['name']).' — '.h(orientations()[$p['orientation']]??'').', '.h(layouts()[$p['layout_type']]??'').'<small class="d-block text-muted mt-1">Transición: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</small></h5><div class="d-flex gap-2">';
+  $playlistItems=array_values(array_filter($items,static fn($i)=>(int)$i['playlist_id']===(int)$p['id']));
+  $open=(int)($_POST['playlist_id']??0)===(int)$p['id']||($createdCopy&&(int)$createdCopy['id']===(int)$p['id']);
+  echo '<details class="card card-body mb-3 ds-playlist" id="playlist-'.(int)$p['id'].'"'.($open?' open':'').'><summary><span class="badge text-bg-light me-2">'.h($p['company_name']).'</span><strong>'.h($p['name']).'</strong><span class="ds-playlist-meta">'.h(orientations()[$p['orientation']]??'').' · '.h(layouts()[$p['layout_type']]??'').' · '.count($playlistItems).' elementos</span></summary><div class="ds-playlist-content"><div class="d-flex justify-content-between flex-wrap gap-2"><p class="text-muted">Transición predeterminada: '.h(transitions()[$p['transition_effect']]??'Fundido suave').' · '.(int)$p['transition_ms'].' ms</p><div class="d-flex flex-wrap gap-2">';
   if(can('playlists.edit'))echo '<button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#duplicate-playlist-'.(int)$p['id'].'">Duplicar / copiar a empresa</button> <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#'.$settingsId.'">Editar lista / empresa</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-playlists-'.(int)$p['id'].'">Eliminar lista</button>';
   echo '<a class="btn btn-sm btn-outline-primary" target="_blank" href="'.h(url('preview.php?id='.$p['id'])).'">Vista previa</a></div></div>';
   if(can('playlists.edit')){
@@ -98,23 +110,52 @@ render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$e
     $deleteModal=str_replace('name="id" value="'.(int)$p['id'].'"','name="playlist_id" value="'.(int)$p['id'].'"',$deleteModal);
     $dsModals.=$deleteModal;
   }
-  echo '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>#</th><th>Elemento</th><th>Segundos</th><th>Repetir</th><th>Transición</th><th>Acciones</th></tr></thead><tbody>';
-  foreach($items as $i)if((int)$i['playlist_id']===(int)$p['id']){
-   $id='item'.(int)$i['id'];echo '<tr><td>'.(int)$i['position'].'</td><td>'.h($i['kind']==='media'?$i['media_name']:'Lista: '.$i['child_name']).'</td><td>'.(int)$i['duration_seconds'].'</td><td>'.(int)$i['repeat_count'].'</td><td>'.h($i['transition_effect']==='inherit'?'Heredar':(transitions()[$i['transition_effect']]??'Fundido')).'</td><td>';
-   if(can('playlists.edit')){
-    echo '<button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#'.$id.'">Editar</button>';
-    foreach(['up'=>'↑','down'=>'↓','delete'=>'Eliminar'] as $act=>$label){form_open();echo '<input type="hidden" name="playlist_id" value="'.$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><input type="hidden" name="item_id" value="'.$i['id'].'"><button class="btn btn-sm btn-outline-secondary" name="action" value="'.$act.'" '.($act==='delete'?'onclick="return confirm(\'¿Eliminar?\')"':'').'>'.$label.'</button></form>';}
-   }
-   echo '</td></tr>';
-   if(can('playlists.edit')){ob_start();echo '<div class="modal fade" id="'.$id.'" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Editar elemento</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">';form_open();echo '<input type="hidden" name="action" value="edit"><input type="hidden" name="playlist_id" value="'.$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><input type="hidden" name="item_id" value="'.$i['id'].'">';field('duration','Duración imágenes (segundos)','number',(string)$i['duration_seconds']);field('repeat','Repeticiones','number',(string)$i['repeat_count']);echo '<label class="form-label">Efecto para este elemento</label>'.sel('transition_effect',['inherit'=>'Heredar de la lista']+transitions(),(string)$i['transition_effect']);echo '<label class="form-label">Duración propia (ms; vacío = heredar)</label><input class="form-control mb-3" type="number" min="0" max="3000" name="transition_ms" value="'.h($i['transition_ms']===null?'':(string)$i['transition_ms']).'">';echo '<button class="btn btn-primary">Guardar</button></form></div></div></div></div>';$dsModals.=ob_get_clean();}
+  $gridId='playlist-grid-'.(int)$p['id'];
+  if(can('playlists.edit')){
+   echo '<form method="post" id="'.$gridId.'" data-playlist-grid><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="save_grid"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><input type="hidden" name="stamp" value="'.h(ds_playlist_stamp($playlistItems)).'"><div class="ds-grid-toolbar"><button type="button" class="btn btn-outline-primary" data-grid-edit>Modificar contenido</button><button type="submit" class="btn btn-primary" data-grid-save hidden>Guardar contenido</button><button type="button" class="btn btn-outline-secondary" data-grid-cancel hidden>Cancelar cambios</button><span class="ds-hint">Edita todos los renglones y guarda una sola vez.</span></div></form>';
   }
+  echo '<div class="table-responsive"><table class="table table-sm ds-playlist-grid"><thead><tr><th>Elemento</th><th>Duración (s)</th><th>Repeticiones</th><th>Efecto</th><th>Duración efecto (ms)</th><th>Acciones</th></tr></thead><tbody>';
+  $usage=[];
+  foreach($playlistItems as $i){
+   $key=$i['kind'].':'.($i['kind']==='media'?$i['media_id']:$i['child_playlist_id']);$usage[$key]=($usage[$key]??0)+1;
+  }
+  foreach($playlistItems as $i){
+   $iid=(int)$i['id'];$prefix='rows['.$iid.']';$editable=can('playlists.edit');
+   $attrs=' form="'.$gridId.'" data-grid-field disabled';
+   echo '<tr><td>'.h($i['kind']==='media'?$i['media_name']:'Lista: '.$i['child_name']).'</td>';
+   foreach(['duration'=>['Duración (s)',1,86400,$i['duration_seconds']],'repeat'=>['Repeticiones',1,30,$i['repeat_count']],'transition_effect'=>['Efecto',0,0,$i['transition_effect']],'transition_ms'=>['Duración efecto (ms)',0,3000,$i['transition_ms']]] as $field=>$v){
+    echo '<td>';
+    if($editable){
+     if($field==='transition_effect'){
+      echo '<select class="form-select form-select-sm" name="'.$prefix.'['.$field.']" aria-label="Efecto del elemento"'.$attrs.'>';
+      foreach(['inherit'=>'Heredar de la lista']+transitions() as $key=>$label)echo '<option value="'.h($key).'"'.($key===$v[3]?' selected':'').'>'.h($label).'</option>';echo '</select>';
+     }else echo '<input class="form-control form-control-sm" type="number" name="'.$prefix.'['.$field.']" min="'.$v[1].'" max="'.$v[2].'" step="1" value="'.h($v[3]===null?'':(string)$v[3]).'" aria-label="'.h($v[0]).' del elemento"'.($field==='transition_ms'?' placeholder="Heredar"':' required').$attrs.'>';
+    }else echo h($field==='transition_effect'?($v[3]==='inherit'?'Heredar':(transitions()[$v[3]]??'')):($v[3]===null?'Heredar':(string)$v[3]));
+    echo '</td>';
+   }
+   echo '<td class="ds-playlist-actions">';
+   if($editable)foreach(['up'=>'↑','down'=>'↓','delete'=>'Eliminar'] as $act=>$label){form_open();echo '<input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><input type="hidden" name="item_id" value="'.$iid.'"><button class="btn btn-sm btn-outline-secondary" name="action" value="'.$act.'" aria-label="'.h(['up'=>'Subir elemento','down'=>'Bajar elemento','delete'=>'Eliminar elemento'][$act]).'" '.($act==='delete'?'onclick="return confirm(\'¿Eliminar este elemento?\')"':'').'>'.$label.'</button></form>';}
+   echo '</td></tr>';
+  }
+  if(!$playlistItems)echo '<tr><td colspan="6">Lista vacía. Añade medios, listas compatibles o un separador blanco.</td></tr>';
   echo '</tbody></table></div>'.$dsModals;
   if(can('playlists.edit')){
-   echo '<form method="post" class="row g-2"><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="add"><input type="hidden" name="playlist_id" value="'.$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><div class="col-md-6"><select class="form-select" name="choice" required><option value="">Medio o lista compatible</option>';
-   foreach($media as $m)if((int)$p['tenant_id']===(int)$m['tenant_id'] && compatible($p,$m))echo '<option value="media:'.$m['id'].'">Medio: '.h($m['name']).'</option>';
-   foreach($lists as $q)if((int)$q['tenant_id']===(int)$p['tenant_id'] && (int)$q['id']!==(int)$p['id'] && compatible($p,$q))echo '<option value="playlist:'.$q['id'].'">Lista: '.h($q['name']).'</option>';
-   echo '</select></div><div class="col-md-2"><input name="duration" type="number" min="1" value="10" title="Segundos" class="form-control"></div><div class="col-md-2"><input name="repeat" type="number" min="1" value="1" title="Repeticiones" class="form-control"></div><div class="col-md-2"><button class="btn btn-primary">Añadir</button></div><div class="col-12"><label class="form-label">Transición del nuevo elemento</label>'.sel('transition_effect',['inherit'=>'Heredar de la lista']+transitions(),'inherit').'</div></form>';
+   $available=[];$excluded=0;
+   foreach($lists as $q)if((int)$q['tenant_id']===(int)$p['tenant_id']&&(int)$q['id']!==(int)$p['id']&&compatible($p,$q)){
+    try{validate_graph((int)$p['tenant_id'],(int)$p['id'],(int)$q['id']);$available[]=['list'=>$q,'empty'=>!expanded((int)$p['tenant_id'],(int)$q['id'])];}catch(RuntimeException $e){$excluded++;}
+   }
+   echo '<form method="post" class="row g-2 mt-3" data-playlist-add><input type="hidden" name="_csrf" value="'.h(csrf()).'"><input type="hidden" name="action" value="add"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><div class="col-md-6"><label class="form-label">Medios o listas compatibles</label><select class="form-select" name="choice" required><option value="">Selecciona un medio o una lista</option><optgroup label="Medios compatibles">';
+   foreach($media as $m)if((int)$p['tenant_id']===(int)$m['tenant_id']&&compatible($p,$m)){
+    $used=$usage['media:'.$m['id']]??0;
+    echo '<option value="media:'.(int)$m['id'].'">'.h($m['name']).($used?' · Ya incluido '.$used.' vez/veces':'').'</option>';
+   }
+   echo '</optgroup><optgroup label="Listas compatibles · '.count($available).'">';
+   foreach($available as $entry){$q=$entry['list'];$used=$usage['playlist:'.$q['id']]??0;echo '<option value="playlist:'.(int)$q['id'].'"'.($entry['empty']?' disabled':'').'>Lista: '.h($q['name']).($entry['empty']?' · Vacía: añade medios primero':'').($used?' · Ya incluida '.$used.' vez/veces':'').'</option>';}
+   echo '</optgroup></select><p class="ds-hint">Puedes repetir elementos. El contador indica sus renglones en esta lista. Las sublistas deben pertenecer a la misma empresa y tener formato y orientación compatibles; no se permiten referencias circulares.</p>';
+   if(!$available)echo '<p class="text-muted">No hay otras listas compatibles. Crea una lista publicitaria para esta empresa, orientación y formato, añádele medios y después selecciónala aquí.</p>';
+   echo '</div><div class="col-md-2"><label class="form-label">Duración (s)</label><input name="duration" type="number" min="1" max="86400" value="10" required class="form-control"></div><div class="col-md-2"><label class="form-label">Repeticiones</label><input name="repeat" type="number" min="1" max="30" value="1" required class="form-control"></div><div class="col-md-2 align-self-start"><button class="btn btn-primary mt-4">Añadir</button></div><div class="col-md-6"><label class="form-label">Efecto</label>'.sel('transition_effect',['inherit'=>'Heredar de la lista']+transitions(),'inherit').'</div><div class="col-md-6"><label class="form-label">Duración efecto (ms; vacío = heredar)</label><input name="transition_ms" type="number" min="0" max="3000" step="1" placeholder="Heredar" class="form-control"></div></form>';
+   if(can('media.edit')){form_open();echo '<input type="hidden" name="action" value="separator"><input type="hidden" name="playlist_id" value="'.(int)$p['id'].'"><input type="hidden" name="tenant_id" value="'.(int)$p['tenant_id'].'"><button class="btn btn-outline-secondary mt-3"'.($p['orientation']==='any'?' disabled title="Define horizontal o vertical para generar el tamaño exacto"':'').'>+ Añadir separador blanco (1 s)</button><p class="ds-hint">Se crea un medio blanco con las medidas centrales de esta lista; puedes modificar su duración en la tabla.</p></form>';}
   }
-  echo '</div>';
+  echo '</div></details>';
  }
 });
