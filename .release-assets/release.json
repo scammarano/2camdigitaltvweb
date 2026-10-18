@@ -1,18 +1,18 @@
 {
-  "tag": "web-v0.4.26",
-  "source_commit": "7646bd88deb2ff9512322905f1636c4d931eaef3",
-  "asset": "SIGNAGE_UPDATE_v0.4.26_LISTAS_GRID_EMPRESA_RSA.zip",
-  "sha256": "c1b878b61187cc2be41ccc197203534863bbf0f3f006296666805c1427926ec8",
-  "title": "Digital Signage Web0.4.26 · Listas editables en grid y empresa de trabajo",
-  "notes": "Listas colapsadas y edición de duración, repeticiones, efecto y duración del efecto directamente en la tabla. Guardado atómico con control de edición obsoleta; se conservan flechas y se ocultan posiciones internas. Medios y sublistas compatibles en grupos separados, con contador de inclusiones y protección contra ciclos/listas vacías. Separadores blancos PNG de los diez formatos centrales, reutilizables por empresa. Biblioteca y asistente muestran dimensiones reales y de formato con diagramas. Empresa de trabajo aplicada por defecto a listas, pantallas y programaciones; SUPERADMIN puede Ver todas con POST/CSRF. Sidebar ocultable también en escritorio. PHP/MySQL, formulario real hasta manifiesto de reproducción, aislamiento, diez PNG, actualización firmada y navegador comprobados en CI. ZIP acumulativo desde web0.4.16. La APK permanece en 0.4.16; no se instala automáticamente en hosting ni dispositivos. ACK formal v2 e integración completa de Turnos siguen pendientes. ZIP SHA256: c1b878b61187cc2be41ccc197203534863bbf0f3f006296666805c1427926ec8",
+  "tag": "web-v0.4.27",
+  "source_commit": "c5820cf936ad4794a83e854d3790754e70d90202",
+  "asset": "SIGNAGE_UPDATE_v0.4.27_LISTAS_MINIATURAS_DECIMAS_RSA.zip",
+  "sha256": "a3e2a50eabca38b019b53b3bca3c1f2001050cd8d89de9265ec407abcb698740",
+  "title": "Digital Signage Web0.4.27 + APK0.4.17 · Miniaturas y edición múltiple",
+  "notes": "Miniaturas reales de medios en renglones, duplicar junto a eliminar, selección múltiple para editar/duplicar/eliminar con control de empresa y revisión. Valores comunes para los cuatro ajustes, sin sobrescribir los campos no indicados. Separador blanco en el combo de medios con duración inicial 0,1 s y corte inmediato, sin botón adicional en la lista. Duración decimal en SQL, manifiesto, copia y reproductores web. APK0.4.17-debug API19+ conserva décimas y temporizador exacto de Overlay, con duración del medio limitada por el máximo de aparición y transición acotada. Probado en emulador API22 con imagen real de100ms y ventana Overlay breve; conserva Sports LAN, HUD, modos, arranque y controles. Firma Android permanente, misma huella de las entregas0.4.14–0.4.16. PHP/MySQL y navegador: aislamiento, operaciones masivas atómicas, POST reales, miniaturas autenticadas, migración idempotente y respaldo del actualizador. ZIP acumulativo desde web0.4.16. No instala automáticamente en hosting/TV; prueba física y ACK formal v2 pendientes. ZIP SHA256: a3e2a50eabca38b019b53b3bca3c1f2001050cd8d89de9265ec407abcb698740",
   "android": {
-    "asset": "2Cam_Digital_Signage_v0.4.16_DEBUG.apk",
-    "sha256": "6df212f43a5eee1e2072b4dcb01a8b2258d4f541b5d13780bd1215a67653f7ae",
+    "asset": "2Cam_Digital_Signage_v0.4.17_DEBUG.apk",
+    "sha256": "e764723b0274cdfa764993f7d7bd89cb1f0d087313bb054b77a80ba421013dd3",
     "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
-    "source_commit": "aeb113e678b4a48edb09a69a8f2af834f9f411db",
+    "source_commit": "80f04eaea996539cdf5a7f5b616dae1c45daa672",
     "envelope": {
-      "asset": "2CAM_APK_android-tv_v0.4.16-debug_RSA.zip",
-      "sha256": "1855627cb5eba430eeb536e628841bc8e5302579a02754e7c3b4714edf206707"
+      "asset": "2CAM_APK_android-tv_v0.4.17-debug_RSA.zip",
+      "sha256": "22b7f8ce20d39e23c63eb7eca302fc486426f205468dcc3b57232ef2b6d69217"
     }
   }
 }

@@ -3,12 +3,12 @@
   "product": "2cam-apk",
   "platform": "android-tv",
   "package": "com.digitalsignage.tv",
-  "version_name": "0.4.16-debug",
-  "version_code": 416,
+  "version_name": "0.4.17-debug",
+  "version_code": 417,
   "min_sdk": 19,
   "channel": "debug",
   "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
   "size": 2160050,
-  "sha256": "6df212f43a5eee1e2072b4dcb01a8b2258d4f541b5d13780bd1215a67653f7ae",
-  "notes": "Canales unificados: Solo estables / Estables y pruebas. Conserva cuatro modos, formatos centrales no editables por pantalla, HUD y Sports LAN. Firma permanente compatible con las APK 0.4.14 y 0.4.15 entregadas. Prueba física Fire OS pendiente."
+  "sha256": "e764723b0274cdfa764993f7d7bd89cb1f0d087313bb054b77a80ba421013dd3",
+  "notes": "Duraciones de medios desde 0,1 segundos, sin redondear, en Cartelera y regiones inteligentes. Overlay usa temporizador preciso y respeta el tiempo del medio dentro del máximo configurado. API22 probado con imagen y ventana reales. Conserva HUD, Sports LAN, cuatro modos y firma permanente compatible con las APK 0.4.14–0.4.16 entregadas. Prueba física pendiente."
 }
