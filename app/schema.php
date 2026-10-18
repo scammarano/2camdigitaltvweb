@@ -33,7 +33,7 @@ function ensure_schema():array{
     foreach(dball('SELECT id FROM tenants') as $t){
         $id=(int)$t['id'];
         $defaults=[
-            'Administrador de empresa'=>['users.manage','roles.manage','media.view','media.edit','playlists.view','playlists.edit','devices.view','devices.edit','schedules.view','schedules.edit','logs.view'],
+            'Administrador de empresa'=>['users.manage','roles.manage','media.view','media.edit','playlists.view','playlists.edit','devices.view','devices.edit','devices.suspend','schedules.view','schedules.edit','logs.view'],
             'Editor de contenidos'=>['media.view','media.edit','playlists.view','playlists.edit','devices.view','schedules.view'],
             'Programador'=>['media.view','playlists.view','devices.view','schedules.view','schedules.edit'],
             'Operador'=>['media.view','playlists.view','devices.view','schedules.view'],

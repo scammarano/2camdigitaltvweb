@@ -8,7 +8,7 @@ $id=filter_input(INPUT_GET,'id',FILTER_VALIDATE_INT,['options'=>['min_range'=>1]
 if(!$id){http_response_code(400);exit;}
 $row=is_super()
  ?dbone('SELECT tenant_id,filename,mime FROM media WHERE id=?',[$id])
- :dbone('SELECT tenant_id,filename,mime FROM media WHERE id=? AND tenant_id=?',[$id,tenant()]);
+ :ds_readable_media((int)$id,tenant());
 if(!$row){http_response_code(404);exit;}
 $mime=(string)$row['mime'];
 if(!in_array($mime,['image/jpeg','image/png','image/webp','image/gif'],true)){http_response_code(415);exit;}

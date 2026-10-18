@@ -44,7 +44,7 @@ if($_SERVER['REQUEST_METHOD']==='POST') {
             }
             $unique=array_values(array_unique($ids));
             $placeholders=implode(',',array_fill(0,count($unique),'?'));
-            $valid=dball('SELECT id,orientation FROM playlists WHERE tenant_id=? AND id IN ('.$placeholders.')',array_merge([$target],$unique));
+            $valid=dball('SELECT id,orientation FROM playlists WHERE (tenant_id=? OR is_shared=1) AND id IN ('.$placeholders.')',array_merge([$target],$unique));
             if(count($valid)!==count($unique))throw new RuntimeException('Una lista no pertenece a la empresa de la pantalla');
             foreach($valid as $p)if(!in_array($p['orientation'],['any',$d['orientation']],true))throw new RuntimeException('Una lista tiene orientación incompatible con la pantalla');
             $mask=0;
@@ -86,8 +86,8 @@ if($filterScreen>0){$scopeWhere.=' AND s.device_id=?';$scopeParams[]=$filterScre
 $rows=dball('SELECT s.*,d.name device_name,d.orientation device_orientation,t.name company_name FROM schedules s JOIN devices d ON d.id=s.device_id AND d.tenant_id=s.tenant_id JOIN tenants t ON t.id=s.tenant_id WHERE '.$scopeWhere.' ORDER BY t.name,s.device_id,s.start_time,s.priority DESC,s.id', $scopeParams);
 $poolWhere=is_super()?'1=1':'tenant_id=?';$poolParams=is_super()?[]:[tenant()];
 $devices=dball('SELECT id,tenant_id,name,orientation FROM devices WHERE '.$poolWhere.' ORDER BY name',$poolParams);
-$lists=dball('SELECT id,tenant_id,name,orientation,layout_type FROM playlists WHERE '.$poolWhere.' ORDER BY name',$poolParams);
-$allItems=dball('SELECT i.schedule_id,i.playlist_id,i.position,p.name FROM schedule_items i JOIN playlists p ON p.id=i.playlist_id AND p.tenant_id=i.tenant_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.schedule_id,i.position,i.id',$scope===null?[]:[$scope]);
+$lists=dball('SELECT id,tenant_id,name,orientation,layout_type,is_shared FROM playlists WHERE '.(is_super()?'1=1':'(tenant_id=? OR is_shared=1)').' ORDER BY name',$poolParams);
+$allItems=dball('SELECT i.schedule_id,i.playlist_id,i.position,p.name FROM schedule_items i JOIN playlists p ON p.id=i.playlist_id WHERE '.($scope===null?'1=1':'i.tenant_id=?').' ORDER BY i.schedule_id,i.position,i.id',$scope===null?[]:[$scope]);
 $bySchedule=[];foreach($allItems as $item)$bySchedule[(int)$item['schedule_id']][]=['id'=>(int)$item['playlist_id'],'name'=>$item['name']];
 // Some legacy blocks have only schedules.playlist_id and no schedule_items.
 foreach($rows as $r)if(empty($bySchedule[(int)$r['id']])) {
@@ -105,7 +105,7 @@ function schedule_form(string $action,array $s,array $devices,array $lists,array
     foreach($devices as $d)echo '<option value="'.(int)$d['id'].'" data-tenant="'.(int)$d['tenant_id'].'" data-orientation="'.h($d['orientation']).'"'.((int)($s['device_id']??0)===(int)$d['id']?' selected':'').'>'.h($d['name']).' ('.h(orientations()[$d['orientation']]??$d['orientation']).')</option>';
     echo '</select><label class="form-label">Secuencia de listas (en orden)</label>';
     echo '<div class="input-group mb-2"><select data-schedule-add-select class="form-select"><option value="">Elegir lista para agregar</option>';
-    foreach($lists as $p)echo '<option value="'.(int)$p['id'].'" data-tenant="'.(int)$p['tenant_id'].'" data-orientation="'.h($p['orientation']).'">'.h($p['name']).' · '.h(orientations()[$p['orientation']]??$p['orientation']).'</option>';
+    foreach($lists as $p)echo '<option value="'.(int)$p['id'].'" data-tenant="'.(int)$p['tenant_id'].'" data-shared="'.(int)$p['is_shared'].'" data-orientation="'.h($p['orientation']).'">'.h($p['name']).' · '.h(orientations()[$p['orientation']]??$p['orientation']).'</option>';
     echo '</select><button type="button" class="btn btn-outline-primary" data-schedule-add>Añadir</button></div>';
     echo '<ol class="ds-schedule-sequence list-group list-group-numbered mb-3" data-schedule-sequence>';
     foreach($currentList as $p){$pid=(int)$p['id'];echo '<li class="list-group-item d-flex align-items-center justify-content-between gap-2" data-list-id="'.$pid.'"><input type="hidden" name="playlists[]" value="'.$pid.'"><span class="flex-grow-1">'.h($p['name']).'</span><button type="button" data-sequence-move="up" class="btn btn-sm btn-outline-secondary" aria-label="Subir">↑</button><button type="button" data-sequence-move="down" class="btn btn-sm btn-outline-secondary" aria-label="Bajar">↓</button><button type="button" data-sequence-remove class="btn btn-sm btn-outline-danger" aria-label="Quitar">×</button></li>';}
@@ -147,5 +147,5 @@ render('Programación',function()use($rows,$devices,$lists,$companies,$bySchedul
             echo '</div></div></div></div>';
         }
     }
-    echo '<script defer src="'.h(url('assets/js/schedules.js')).'?v=0.3.8"></script>';
+    echo '<script defer src="'.h(url('assets/js/schedules.js')).'?v=0428"></script>';
 });

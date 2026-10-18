@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__.'/bootstrap.php';
+require_once __DIR__.'/shared_content.php';
 function must_admin():void{require_permission('users.manage');}
 function post_tenant():int{
     $t=tenant();if(is_super() && isset($_POST['tenant_id'])){
@@ -25,6 +26,7 @@ function owned_edit_record(string $table,int $id):array{
     return $record;
 }
 function assert_unlinked_before_transfer(string $table,int $id,int $old):void{
+    if(in_array($table,['media','playlists'],true)&&dbone("SELECT id FROM $table WHERE id=? AND tenant_id=? AND is_shared=1",[$id,$old]))throw new RuntimeException('Deja de compartir el contenido antes de transferir su propiedad');
     if($table==='media'){
         if(dbone("SELECT id FROM playlist_items WHERE tenant_id=? AND media_id=? AND kind='media' LIMIT 1",[$old,$id]))throw new RuntimeException('Este medio pertenece a una lista. Quítalo de las listas antes de cambiarlo de empresa.');
     }elseif($table==='playlists'){
@@ -57,23 +59,24 @@ function validate_graph(int $tid,int $root,int $child):void{
     $seen=[];$visit=function(int $id,int $level)use(&$visit,&$seen,$tid,$root):void{
         if($id===$root)throw new RuntimeException('Referencia circular');if($level>12)throw new RuntimeException('Profundidad máxima: 12');
         if(isset($seen[$id]))return;$seen[$id]=true;
-        foreach(dball("SELECT child_playlist_id FROM playlist_items WHERE tenant_id=? AND playlist_id=? AND kind='playlist'",[$tid,$id]) as $r)$visit((int)$r['child_playlist_id'],$level+1);
+        foreach(dball("SELECT child_playlist_id FROM playlist_items WHERE playlist_id=? AND kind='playlist'",[$id]) as $r)$visit((int)$r['child_playlist_id'],$level+1);
     };$visit($child,0);
 }
 function expanded(int $tid,int $id,array &$stack=[],int $depth=0):array{
     if($depth>12||in_array($id,$stack,true))throw new RuntimeException('Lista circular o profundidad excesiva');
-    $settings=dbone('SELECT transition_effect,transition_ms FROM playlists WHERE tenant_id=? AND id=?',[$tid,$id]);
+    $settings=ds_content_record('playlists',$id,$tid);
     if(!$settings)throw new RuntimeException('Lista anidada no encontrada');
+    $owner=(int)$settings['tenant_id'];
     $listEffect=safe_transition((string)$settings['transition_effect']);
     $listMs=safe_transition_ms($settings['transition_ms']);
     $stack[]=$id;$out=[];
-    foreach(dball('SELECT * FROM playlist_items WHERE tenant_id=? AND playlist_id=? ORDER BY position,id',[$tid,$id]) as $item){
+    foreach(dball('SELECT * FROM playlist_items WHERE tenant_id=? AND playlist_id=? ORDER BY position,id',[$owner,$id]) as $item){
         for($i=0;$i<min(30,max(1,(int)$item['repeat_count']));$i++){
             if($item['kind']==='media'){
-                $m=dbone('SELECT id,name,mime,orientation,layout_type,sha256,size_bytes FROM media WHERE id=? AND tenant_id=?',[(int)$item['media_id'],$tid]);
+                $m=ds_content_record('media',(int)$item['media_id'],$owner);
                 if($m)$out[]=['media_id'=>(int)$m['id'],'name'=>$m['name'],'mime'=>$m['mime'],'orientation'=>$m['orientation'],'layout'=>$m['layout_type'],'sha256'=>$m['sha256'],'size'=>(int)$m['size_bytes'],'duration'=>ds_media_duration($item['duration_seconds']),'transition'=>($item['transition_effect']==='inherit'?$listEffect:safe_transition((string)$item['transition_effect'])),'transition_ms'=>($item['transition_ms']===null?$listMs:safe_transition_ms($item['transition_ms']))];
             }else{
-                $children=expanded($tid,(int)$item['child_playlist_id'],$stack,$depth+1);
+                $children=expanded($owner,(int)$item['child_playlist_id'],$stack,$depth+1);
                 if($children){
                     // A parent list item may override the transition INTO an included list.
                     if($item['transition_effect']!=='inherit')$children[0]['transition']=safe_transition((string)$item['transition_effect']);

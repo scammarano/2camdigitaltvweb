@@ -16,6 +16,10 @@ function ds_cleanup_record(string $entity,int $id,int $tid,bool $lock=false):arr
 /** Return specific, user-actionable blockers without mutating other records. */
 function ds_cleanup_dependencies(string $entity,int $id,int $tid,array $row):array {
     $issues=[];
+    if(in_array($entity,['media','playlists'],true)){
+        $col=$entity==='media'?'media_id':'child_playlist_id';
+        if(dbone("SELECT id FROM playlist_items WHERE $col=? AND tenant_id<>? LIMIT 1",[$id,$tid]))$issues[]='Otras empresas utilizan este contenido compartido. Retira esas referencias antes de eliminarlo.';
+    }
     if($entity==='media'){
         $links=dball("SELECT DISTINCT p.name FROM playlist_items i JOIN playlists p ON p.id=i.playlist_id AND p.tenant_id=i.tenant_id WHERE i.tenant_id=? AND i.kind='media' AND i.media_id=? ORDER BY p.name LIMIT 6",[$tid,$id]);
         if($links)$issues[]='Se utiliza en estas listas: '.implode(', ',array_column($links,'name')).'. Primero quita el medio de ellas.';

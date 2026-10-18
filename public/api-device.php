@@ -5,6 +5,7 @@ require_once ROOT.'/app/domain.php';
 require_once ROOT.'/app/playback.php';
 require_once ROOT.'/app/mode_runtime.php';
 require_once ROOT.'/app/device_config.php';require_once ROOT.'/app/media_formats.php';
+require_once ROOT.'/app/device_service.php';
 header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
 function api_out(array $data,int $code=200):never {http_response_code($code);echo json_encode($data,JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);exit;}
 function req_payload():array {$raw=file_get_contents('php://input');if(strlen($raw)>16384)api_out(['error'=>'Solicitud demasiado grande'],413);$p=json_decode($raw?:'{}',true);return is_array($p)?$p:[];}
@@ -41,6 +42,14 @@ try {
     api_out(['token'=>$token,'device_id'=>(int)$d['id']]);
   }
   $d=device_context();$tid=(int)$d['tenant_id'];$did=(int)$d['id'];
+  $service=ds_service_state($tid,$did);
+  if($op==='service'){
+    if($_SERVER['REQUEST_METHOD']==='GET')api_out(['service'=>$service]);
+    if($_SERVER['REQUEST_METHOD']!=='POST')api_out(['error'=>'Método inválido'],405);
+    $p=req_payload();if(!is_int($p['revision']??null)||!is_bool($p['suspended']??null))api_out(['error'=>'Confirmación inválida'],400);
+    try{ds_service_report($tid,$did,$p['revision'],$p['suspended']);}catch(RuntimeException $e){api_out(['error'=>$e->getMessage()],409);}
+    api_out(['ok'=>true]);
+  }
   if($op==='heartbeat'){
     if($_SERVER['REQUEST_METHOD']!=='POST')api_out(['error'=>'Método inválido'],405);
     $p=req_payload();execsql('UPDATE devices SET last_seen=UTC_TIMESTAMP() WHERE id=? AND tenant_id=?',[$did,$tid]);
@@ -52,10 +61,11 @@ try {
   }
   if($op==='live'){
     if($_SERVER['REQUEST_METHOD']!=='GET')api_out(['error'=>'Método inválido'],405);
-    api_out(['device_id'=>$did,'live'=>live_panel($tid,$did)]);
+    api_out(['device_id'=>$did,'service'=>$service,'live'=>$service['suspended']?['widget_type'=>'queue','payload'=>['title'=>'Servicio suspendido']]:live_panel($tid,$did)]);
   }
   if($op==='manifest'){
     if($_SERVER['REQUEST_METHOD']!=='GET')api_out(['error'=>'Método inválido'],405);
+    if($service['suspended'])api_out(['schema_version'=>3,'device_id'=>$did,'device_name'=>$d['name'],'orientation'=>$d['orientation'],'mode'=>0,'active_mode'=>0,'service'=>$service,'schedules'=>[],'fallback'=>null,'playback'=>['source'=>'none','items'=>[]],'playlist_catalog'=>(object)[],'media_formats'=>ds_formats_current()]);
     $zone=(string)(cfg()['timezone']??'UTC');
     if(!empty($d['site_id'])){$site=dbone('SELECT timezone FROM sites WHERE id=? AND tenant_id=?',[(int)$d['site_id'],$tid]);if(!empty($site['timezone']))$zone=$site['timezone'];}
     $now=new DateTimeImmutable('now',playback_site_timezone($zone));$opts=runtime_opts($tid,$did);
@@ -74,7 +84,7 @@ try {
     }
     $fallback=null;
     if(!empty($d['active_playlist_id'])){
-      $list=dbone('SELECT id,name,orientation,layout_type FROM playlists WHERE id=? AND tenant_id=?',[(int)$d['active_playlist_id'],$tid]);
+      $list=ds_content_record('playlists',(int)$d['active_playlist_id'],$tid);
       if($list&&($list['orientation']==='any'||$list['orientation']===$d['orientation'])){
         $entries=expanded($tid,(int)$list['id']);foreach($entries as &$item)$item['url']=url('device-media.php?id='.$item['media_id']);unset($item);
         $fallback=['playlist_id'=>(int)$list['id'],'playlist_name'=>$list['name'],'orientation'=>$list['orientation'],'layout'=>$list['layout_type'],'items'=>$entries];
@@ -88,13 +98,13 @@ try {
     $actual=$reported?json_decode($reported['config_json'],true):[];
     foreach([$wanted,is_array($actual)?$actual:[]] as $config)foreach($config as $key=>$id)if(str_contains($key,'playlist_')&&is_int($id)&&$id>0)$ids[$id]=true;
     $catalog=[];
-    foreach(dball('SELECT id,name,orientation,layout_type FROM playlists WHERE tenant_id=? AND (orientation=? OR orientation=?) ORDER BY id',[$tid,$d['orientation'],'any']) as $list){
+    foreach(dball('SELECT id,name,orientation,layout_type FROM playlists WHERE (tenant_id=? OR is_shared=1) AND (orientation=? OR orientation=?) ORDER BY id',[$tid,$d['orientation'],'any']) as $list){
       $expanded=expanded($tid,(int)$list['id']);$count=count($expanded);$images=count(array_filter($expanded,fn($item)=>str_starts_with($item['mime'],'image/')));
       $items=[];if(isset($ids[(int)$list['id']])){$items=$expanded;foreach($items as &$item)$item['url']=url('device-media.php?id='.$item['media_id']);unset($item);}
       $catalog[(string)$list['id']]=['id'=>(int)$list['id'],'name'=>$list['name'],'layout'=>$list['layout_type'],'orientation'=>$list['orientation'],'item_count'=>$count,'image_count'=>$images,'items'=>$items];
     }
     $currentMode=resolve_mode($d,$modeBlocks,$now,(int)$opts['modes_enabled']);
-    api_out(['schema_version'=>3,'device_id'=>$did,'device_name'=>$d['name'],'orientation'=>$d['orientation'],
+    api_out(['schema_version'=>3,'device_id'=>$did,'device_name'=>$d['name'],'orientation'=>$d['orientation'],'service'=>$service,
       'mode'=>(int)$d['mode'],'active_mode'=>$currentMode,'timezone'=>$now->getTimezone()->getName(),
       'server_local_time'=>$now->format('Y-m-d H:i:s'),'server_epoch_ms'=>(int)round(microtime(true)*1000),
       'mode_blocks'=>$modeBlocks,'device_options'=>$opts,'schedules'=>$all,'fallback'=>$fallback,'playback'=>$selected,

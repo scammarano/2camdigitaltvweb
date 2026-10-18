@@ -23,8 +23,8 @@ function dbone(string $sql,array $params=[]):?array{$s=db()->prepare($sql);$s->e
 function execsql(string $sql,array $params=[]):int{$s=db()->prepare($sql);$s->execute($params);return $s->rowCount();}
 function user():?array{
     if (empty($_SESSION['user']['id']))return null;
-    try{$u=dbone('SELECT id,tenant_id,name,email,role,role_id,is_active FROM users WHERE id=?',[(int)$_SESSION['user']['id']]);}
-    catch(PDOException $e){$u=dbone('SELECT id,tenant_id,name,email,role,NULL AS role_id,1 AS is_active FROM users WHERE id=?',[(int)$_SESSION['user']['id']]);}
+    try{$u=dbone('SELECT id,tenant_id,name,email,role,role_id,is_active,denied_permissions_json FROM users WHERE id=?',[(int)$_SESSION['user']['id']]);}
+    catch(PDOException $e){try{$u=dbone('SELECT id,tenant_id,name,email,role,role_id,is_active FROM users WHERE id=?',[(int)$_SESSION['user']['id']]);}catch(PDOException $legacy){$u=dbone('SELECT id,tenant_id,name,email,role,NULL AS role_id,1 AS is_active FROM users WHERE id=?',[(int)$_SESSION['user']['id']]);}}
     if (!$u || !(int)$u['is_active']) {unset($_SESSION['user']);return null;}
     return $u;
 }
@@ -36,16 +36,17 @@ function permission_names():array{return [
  'companies.manage'=>'Empresas', 'users.manage'=>'Gestionar usuarios', 'roles.manage'=>'Gestionar roles',
  'media.view'=>'Ver medios','media.edit'=>'Administrar medios','playlists.view'=>'Ver listas','playlists.edit'=>'Administrar listas',
  'devices.view'=>'Ver pantallas','devices.edit'=>'Administrar pantallas','schedules.view'=>'Ver programaciones','schedules.edit'=>'Administrar programaciones',
- 'logs.view'=>'Consultar logs de empresa','updates.manage'=>'Actualizar plataforma'];}
+ 'logs.view'=>'Consultar logs de empresa','updates.manage'=>'Actualizar plataforma','content.share'=>'Compartir medios y listas con otras empresas','devices.suspend'=>'Suspender o reactivar el servicio de pantallas'];}
 function permissions():array{
     $u=user();if(!$u)return [];
     if($u['role']==='superadmin')return array_keys(permission_names());
-    if(empty($u['role_id']))return ($u['role']==='admin')?array_values(array_diff(array_keys(permission_names()),['companies.manage','updates.manage'])):
-        ['media.view','playlists.view','devices.view','schedules.view'];
+    $denied=json_decode($u['denied_permissions_json']??'[]',true);$denied=is_array($denied)?$denied:[];
+    if(empty($u['role_id']))return array_values(array_diff(($u['role']==='admin')?array_values(array_diff(array_keys(permission_names()),['companies.manage','updates.manage','content.share'])):
+        ['media.view','playlists.view','devices.view','schedules.view'],$denied));
     $r=dbone('SELECT permissions_json FROM roles WHERE id=? AND tenant_id=?',[(int)$u['role_id'],(int)$u['tenant_id']]);
     if(!$r)return [];
     $perms=json_decode($r['permissions_json'],true);
-    return is_array($perms)?array_values(array_intersect($perms,array_keys(permission_names()))):[];
+    return is_array($perms)?array_values(array_diff(array_intersect($perms,array_keys(permission_names())),$denied)):[];
 }
 function can(string $p):bool{return in_array($p,permissions(),true);}
 function require_permission(string $p):void{auth();if(!can($p)){http_response_code(403);exit('No tiene permisos para esta operación.');}}

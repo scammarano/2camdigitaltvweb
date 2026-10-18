@@ -43,7 +43,7 @@ function ds_playlist_duplicate(int $sourceId,int $destination,string $name):arra
    try{$in=fopen($src,'rb');if(!$in)throw new RuntimeException('No se pudo leer el medio.');try{stream_copy_to_stream($in,$out,(int)$m['size_bytes']+1);}finally{fclose($in);}}finally{fclose($out);}
    chmod($dest,0600);
    if(filesize($dest)!==(int)$m['size_bytes']||!hash_equals((string)$m['sha256'],hash_file('sha256',$dest)))throw new RuntimeException('La copia de «'.$m['name'].'» no superó la comprobación de integridad.');
-   return $mediaMap[$id]=ds_playlist_copy_insert('media',$m,['tenant_id'=>$destination,'filename'=>$stored]);
+   return $mediaMap[$id]=ds_playlist_copy_insert('media',$m,['tenant_id'=>$destination,'filename'=>$stored,'is_shared'=>0]);
   };
   $copyList=function(int $id,int $depth=0)use(&$copyList,$copyMedia,&$listMap,&$stack,&$itemsCopied,&$rootId,$sourceId,$sourceTenant,$destination,$name):int {
    if($depth>12||isset($stack[$id]))throw new RuntimeException('La lista contiene un ciclo o supera 12 niveles.');
@@ -57,7 +57,7 @@ function ds_playlist_duplicate(int $sourceId,int $destination,string $name):arra
      if($n>20)throw new RuntimeException('No se pudo elegir un nombre único para la sublista.');$copyName=ds_playlist_copy_name((string)$p['name'],$suffix.'-'.$n);
     }
    }
-   $new=ds_playlist_copy_insert('playlists',$p,['tenant_id'=>$destination,'name'=>$copyName]);$listMap[$id]=$new;if($id===$sourceId)$rootId=$new;$stack[$id]=true;
+   $new=ds_playlist_copy_insert('playlists',$p,['tenant_id'=>$destination,'name'=>$copyName,'is_shared'=>0]);$listMap[$id]=$new;if($id===$sourceId)$rootId=$new;$stack[$id]=true;
    foreach(dball('SELECT * FROM playlist_items WHERE tenant_id=? AND playlist_id=? ORDER BY position,id FOR UPDATE',[$sourceTenant,$id]) as $item){
     if(++$itemsCopied>2000)throw new RuntimeException('La copia supera 2000 renglones.');
     if($item['kind']==='media'){

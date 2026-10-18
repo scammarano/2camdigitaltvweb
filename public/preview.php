@@ -1,7 +1,7 @@
 <?php
 require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_permission('playlists.view');
 $id=(int)($_GET['id']??0);
-$p=is_super()?dbone('SELECT * FROM playlists WHERE id=?',[$id]):dbone('SELECT * FROM playlists WHERE id=? AND tenant_id=?',[$id,tenant()]);
+$p=is_super()?dbone('SELECT * FROM playlists WHERE id=?',[$id]):ds_content_record('playlists',$id,tenant());
 if(!$p){http_response_code(404);exit('Lista no encontrada');}
 try{$entries=expanded((int)$p['tenant_id'],$id);}catch(Throwable $e){http_response_code(422);exit(h(fault($e,'preview')));}
 foreach($entries as &$item)$item['url']=url('media-file.php?id='.$item['media_id']);unset($item);

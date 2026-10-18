@@ -4,7 +4,8 @@ $t=tenant();$error='';$ok='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
  check_csrf();try{
   require_permission('media.edit');$action=$_POST['action']??'upload';$target=post_tenant();
-  if($action==='white_separator'){
+  if($action==='share'){ds_content_share('media',(int)($_POST['id']??0),$target,isset($_POST['is_shared']));$ok='Disponibilidad actualizada';
+  }elseif($action==='white_separator'){
    ds_media_white_separator($target,(string)($_POST['orientation']??''),(string)($_POST['layout_type']??''));
    $ok='Separador blanco disponible en la biblioteca. Puedes añadirlo y repetirlo en las listas compatibles.';
   }elseif(in_array($action,['bulk_copy','bulk_move','bulk_classify'],true)){
@@ -20,7 +21,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $id=(int)($_POST['id']??0);$m=owned_edit_record('media',$id);$old=(int)$m['tenant_id'];
    $name=trim($_POST['name']??'');$ori=$_POST['orientation']??'';$layout=$_POST['layout_type']??'';
    if($name===''||!isset(orientations()[$ori])||!isset(layouts()[$layout]))throw new RuntimeException('Nombre, orientación o formato inválidos');
-   $linked=dball('SELECT p.name,p.orientation,p.layout_type FROM playlist_items i JOIN playlists p ON p.id=i.playlist_id AND p.tenant_id=i.tenant_id WHERE i.tenant_id=? AND i.kind=? AND i.media_id=?',[$old,'media',$id]);
+   $linked=dball('SELECT p.name,p.orientation,p.layout_type FROM playlist_items i JOIN playlists p ON p.id=i.playlist_id AND p.tenant_id=i.tenant_id WHERE i.kind=? AND i.media_id=?',['media',$id]);
    foreach($linked as $p)if(!compatible($p,['orientation'=>$ori,'layout_type'=>$layout]))throw new RuntimeException('Cambio incompatible con lista: '.$p['name']);
    $w=isset($_POST['width_px']) && $_POST['width_px']!==''?(int)$_POST['width_px']:null;
    $h=isset($_POST['height_px']) && $_POST['height_px']!==''?(int)$_POST['height_px']:null;
@@ -99,7 +100,7 @@ $fMinMb=(string)($_GET['min_mb']??'');$fMaxMb=(string)($_GET['max_mb']??'');
 $fWidth=(string)($_GET['width_px']??'');$fHeight=(string)($_GET['height_px']??'');
 $fSort=(string)($_GET['sort']??'newest');$fOrder=(string)($_GET['order']??'desc');
 $scope=company_scope(isset($_GET['company'])?(string)$_GET['company']:null);
-$where='1=1';$params=[];if($scope!==null){$where.=' AND m.tenant_id=?';$params[]=$scope;}
+$where='1=1';$params=[];if($scope!==null){$where.=' AND (m.tenant_id=? OR m.is_shared=1)';$params[]=$scope;}
 if($query!==''){$where.=' AND m.name LIKE ?';$params[]='%'.str_replace(['%','_'],['\\%','\\_'],substr($query,0,120)).'%';}
 if($fOri!=='' && isset(orientations()[$fOri])){$where.=' AND m.orientation=?';$params[]=$fOri;}
 if($fLayout!=='' && isset(layouts()[$fLayout])){$where.=' AND m.layout_type=?';$params[]=$fLayout;}
@@ -166,6 +167,7 @@ render('Biblioteca de medios',function()use($rows,$error,$ok,$query,$fOri,$fLayo
  }
  echo '<div class="card table-responsive"><table class="table ds-media-grid"><thead><tr><th class="ds-bulk-select-col">'.(can('media.edit')?'<input type="checkbox" class="form-check-input" data-bulk-all aria-label="Seleccionar todos los medios filtrados" title="Seleccionar todos los medios visibles">':'').'</th><th>Vista previa</th><th>Empresa</th><th>Medio</th><th>MIME</th><th>Pantalla</th><th>Presentación</th><th>Resolución</th><th>Tamaño</th><th>Acciones</th></tr></thead><tbody>';
  $dsModals='';foreach($rows as $m){$dlg='med'.(int)$m['id'];
+ $editableMedia=can('media.edit')&&(is_super()||(int)$m['tenant_id']===tenant());
  $orientation=(string)$m['orientation'];$layout=(string)$m['layout_type'];
  $guide=ds_media_geometry($orientation,$layout);
  $screenName=orientations()[$orientation]??'Sin clasificar';
@@ -182,14 +184,14 @@ render('Biblioteca de medios',function()use($rows,$error,$ok,$query,$fOri,$fLayo
  $screenOrientation=$orientation==='portrait'?'portrait':'landscape';
  $screenDiagram='<div class="ds-preview-mini-screen" data-orientation="'.h($screenOrientation).'" data-layout="'.h($layout).'" role="img" aria-label="'.h($screenName.' · '.$presentationName).'"><span class="ds-mini-selected"></span></div>';
  $presentation='<div class="ds-media-presentation">'.$screenDiagram.'<span class="ds-media-zone-name">'.h($presentationName).'</span>'.($zoneNote!==''?'<small class="ds-media-zone-percent">'.h($zoneNote).'</small>':'').'</div>';
- echo '<tr>'.(can('media.edit')?'<td class="ds-bulk-select-col"><input class="form-check-input" type="checkbox" data-bulk-id form="ds-bulk-form" name="media_ids[]" value="'.(int)$m['id'].'" aria-label="Seleccionar '.h((string)$m['name']).'"></td>':'<td></td>')
+ echo '<tr>'.($editableMedia?'<td class="ds-bulk-select-col"><input class="form-check-input" type="checkbox" data-bulk-id form="ds-bulk-form" name="media_ids[]" value="'.(int)$m['id'].'" aria-label="Seleccionar '.h((string)$m['name']).'"></td>':'<td></td>')
   .'<td class="ds-media-preview-cell"><a class="ds-media-preview-frame" href="'.h($sourceLink).'" target="_blank" rel="noopener" title="Abrir medio original">'.$mediaPreview.'</a></td>'
   .'<td>'.h($m['company_name']).'</td><td class="ds-media-filename">'.h($m['name']).'</td><td>'.h($m['mime']).'</td><td>'.h($screenName).'</td><td>'.$presentation.'</td>'
   .'<td><strong>'.h((string)($m['width_px']??'—')).' × '.h((string)($m['height_px']??'—')).' px</strong>'.($guide?'<small class="d-block text-muted">Formato: '.$guide['width'].' × '.$guide['height'].' px</small>':'').($guide&&(int)$m['width_px']>0&&(int)$m['height_px']>0&&!ds_media_geometry_check((int)$m['width_px'],(int)$m['height_px'],$guide)?'<small class="d-block text-danger">Proporción incompatible</small>':'').'</td><td>'.round((int)$m['size_bytes']/1048576,2).' MB</td>'
   .'<td><a class="btn btn-sm btn-outline-secondary" href="'.h($sourceLink).'" target="_blank" rel="noopener">Ver</a> ';
- if(can('media.edit'))echo '<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#'.$dlg.'">Editar</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-media-'.(int)$m['id'].'">Eliminar</button>';
- echo '</td></tr>';
- if(can('media.edit')){
+ if($editableMedia)echo '<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#'.$dlg.'">Editar</button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#remove-media-'.(int)$m['id'].'">Eliminar</button>';
+ echo ds_share_checkbox('media',$m).'</td></tr>';
+ if($editableMedia){
  ob_start();echo '<div class="modal fade" id="'.$dlg.'" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Editar medio</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">';form_open();echo '<input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="'.$m['id'].'">'.company_select((int)$m['tenant_id']).'<label>Nombre</label><input class="form-control mb-2" name="name" value="'.h($m['name']).'" required><label>Orientación de pantalla</label>'.sel('orientation',orientations(),$m['orientation']).'<label>Presentación en pantalla</label>'.sel('layout_type',layouts(),$m['layout_type']).'<div class="row"><div class="col"><label>Ancho px</label><input type="number" min="1" class="form-control" name="width_px" value="'.h((string)($m['width_px']??'')).'"></div><div class="col"><label>Alto px</label><input type="number" min="1" class="form-control" name="height_px" value="'.h((string)($m['height_px']??'')).'"></div></div><p class="text-muted mt-2">Las dimensiones son metadatos; no redimensionan el archivo original. Si hay listas incompatibles, el cambio se bloqueará.</p><button class="btn btn-primary">Guardar</button></form></div></div></div></div>';$dsModals.=ob_get_clean();
  $dsModals.=ds_cleanup_modal('media',(int)$m['id'],(int)$m['tenant_id'],(string)$m['name'],
    'Si se utiliza en una playlist, primero deberás quitarlo de ella. Al eliminarlo se libera espacio en el servidor.');

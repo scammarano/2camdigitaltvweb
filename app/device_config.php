@@ -1,6 +1,6 @@
 <?php
 /** Single allow-listed non-secret schema for device settings (version 1). */
-require_once __DIR__.'/bootstrap.php';
+require_once __DIR__.'/bootstrap.php';require_once __DIR__.'/shared_content.php';
 function ds_config_schema():array {static $schema;return $schema??=json_decode(file_get_contents(__DIR__.'/config-schema.json'),true,32,JSON_THROW_ON_ERROR);}
 function ds_config_defaults():array {return array_column(ds_config_schema()['fields'],'default','key');}
 function ds_config_migrate_v1(array $input):array {
@@ -49,7 +49,7 @@ function ds_config_form(array $c,int $tid,int $did):void {
   echo '<label class="form-label">'.h($f['label']).'</label>';
   if($f['type']==='playlist'){
    $options=[0=>($k==='signage_playlist_id'?'Programación del portal':'Sin asignar')];
-   foreach(dball('SELECT p.id,p.name FROM playlists p JOIN devices d ON d.tenant_id=p.tenant_id WHERE d.id=? AND d.tenant_id=? AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?) ORDER BY p.id',[$did,$tid,$f['layout'],'any']) as $p)$options[(int)$p['id']]='#'.$p['id'].' · '.$p['name'];
+   foreach(dball('SELECT p.id,p.name FROM playlists p JOIN devices d ON (d.tenant_id=p.tenant_id OR p.is_shared=1) WHERE d.id=? AND d.tenant_id=? AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?) ORDER BY p.id',[$did,$tid,$f['layout'],'any']) as $p)$options[(int)$p['id']]='#'.$p['id'].' · '.$p['name'];
    if($c[$k]>0&&!isset($options[$c[$k]]))$options[$c[$k]]='#'.$c[$k].' · No disponible';
    echo sel($k,$options,(string)$c[$k]);
   }elseif($f['type']==='enum')echo sel($k,$f['options'],(string)$c[$k]);
@@ -61,7 +61,7 @@ function ds_config_validate_playlists(array $clean,int $tid,int $did):void {
  foreach($clean as $key=>$id){
   if(!str_contains($key,'playlist_')||!$id)continue;
   $layout=$key==='signage_playlist_id'?'fullscreen':preg_replace('/^(overlay|queue|scoreboard)_playlist_/','',$key);
-  $p=dbone('SELECT orientation,layout_type FROM playlists WHERE id=? AND tenant_id=?',[$id,$tid]);
+  $p=ds_content_record('playlists',(int)$id,$tid);
   if(!$p||$p['layout_type']!==$layout||!in_array($p['orientation'],['any',$d['orientation']],true))throw new RuntimeException('Playlist incompatible o de otra empresa: '.$key);
  }
 }
@@ -91,7 +91,7 @@ function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
   foreach(dball('SELECT COALESCE(si.playlist_id,s.playlist_id) playlist_id FROM schedules s LEFT JOIN schedule_items si ON si.schedule_id=s.id AND si.tenant_id=s.tenant_id WHERE s.device_id=? AND s.tenant_id=?',[$did,$tid]) as $r)$ids[]=(int)$r['playlist_id'];
  }
  foreach(array_unique($ids) as $pid){
-  $list=dbone('SELECT p.id FROM playlists p JOIN devices d ON d.tenant_id=p.tenant_id WHERE p.id=? AND p.tenant_id=? AND d.id=? AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?)',[$pid,$tid,$did,$layout,'any']);
+  $list=dbone('SELECT p.id FROM playlists p JOIN devices d ON (d.tenant_id=p.tenant_id OR p.is_shared=1) WHERE p.id=? AND d.tenant_id=? AND d.id=? AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?)',[$pid,$tid,$did,$layout,'any']);
   if(!$list)continue;
   foreach(expanded($tid,$pid) as $item)if(($item['layout']??'fullscreen')===$layout && ($mode!==2||str_starts_with($item['mime'],'image/')))return;
  }

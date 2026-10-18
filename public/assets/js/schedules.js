@@ -11,7 +11,7 @@
     if (!form || !device || !addSelect || !add || !sequence) return;
     const tenantInput = form.querySelector('input[name="tenant_id"]');
     const tenant = () => company ? company.value : tenantInput?.value;
-    const available = (option, targetTenant) => option.value !== '' && option.dataset.tenant === String(targetTenant);
+    const available = (option, targetTenant) => option.value !== '' && (option.dataset.tenant === String(targetTenant) || option.dataset.shared === '1');
     const refresh = () => {
       const target = tenant();
       [...device.options].forEach(option => { option.hidden = !available(option, target); option.disabled = option.hidden; });

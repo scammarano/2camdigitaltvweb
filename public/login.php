@@ -3,8 +3,8 @@ require dirname(__DIR__).'/app/bootstrap.php';
 if(!is_file(ROOT.'/storage/installed.lock')){header('Location: install.php');exit;}
 $error='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
- check_csrf();$row=dbone('SELECT id,tenant_id,name,email,role,password_hash FROM users WHERE email=?',[strtolower(trim($_POST['email']??''))]);
- if($row && password_verify($_POST['password']??'',$row['password_hash'])){
+ check_csrf();$row=dbone('SELECT id,tenant_id,name,email,role,password_hash,is_active FROM users WHERE email=?',[strtolower(trim($_POST['email']??''))]);
+ if($row && (int)$row['is_active']===1 && password_verify($_POST['password']??'',$row['password_hash'])){
   session_regenerate_id(true);unset($row['password_hash']);$_SESSION['user']=$row;$_SESSION['active_tenant']=(int)$row['tenant_id'];log_event('login');redirect('index.php');
  }
  $error='Correo o contraseña incorrectos';log_event('login_failed');

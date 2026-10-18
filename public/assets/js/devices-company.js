@@ -1,7 +1,7 @@
 /** Keep playlist choices in sync with company and orientation for create/edit screens. */
 (() => {
   'use strict';
-  const allowed=(option,tenant,orientation)=>!option.value || (option.dataset.tenant===String(tenant) && (option.dataset.orientation==='any'||option.dataset.orientation===orientation));
+  const allowed=(option,tenant,orientation)=>!option.value || ((option.dataset.tenant===String(tenant)||option.dataset.shared==='1') && (option.dataset.orientation==='any'||option.dataset.orientation===orientation));
   document.querySelectorAll('#createModal, [id^="dev"]').forEach(modal=>{
     const form=modal.querySelector('form');if(!form)return;
     const company=form.querySelector('select[name="tenant_id"]')||form.querySelector('input[name="tenant_id"]');
