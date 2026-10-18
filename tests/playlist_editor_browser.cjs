@@ -7,6 +7,8 @@ const assert=require('assert/strict');
  await page.context().addCookies([{name:'PHPSESSID',value:JSON.parse(fs.readFileSync('.browser-session.json','utf8')).session,url:'http://127.0.0.1:8080'}]);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:8080/_ui-playlists.html');
+ await page.addScriptTag({url:'http://127.0.0.1:8080/assets/js/transition-engine.js'});
+ assert(await page.evaluate(()=>{const c=document.createElement('div'),v=document.createElement('video');let stopped=false;v.pause=()=>{stopped=true;};c.appendChild(v);new DSSlides.SlideDeck(c).clear();return stopped&&c.children.length===0;}));
  const lists=page.locator('details.ds-playlist');assert((await lists.count())>0);
  assert.equal(await page.locator('details.ds-playlist[open]').count(),0);
  const list=lists.filter({has:page.locator('summary strong',{hasText:'Editor fixture'})});

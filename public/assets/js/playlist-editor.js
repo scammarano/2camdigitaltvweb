@@ -40,6 +40,11 @@
   function videos(){if(list.open)list.querySelectorAll('[data-row-video]').forEach(function(v){if(!v.getAttribute('src')){v.src=v.dataset.rowVideo;v.preload='metadata';v.load();}});}
   list.addEventListener('toggle',videos);videos();selection();
  });
+ document.querySelectorAll('details.ds-playlist').forEach(function(list){
+  if(list.querySelector('[data-playlist-grid]'))return;
+  function videos(){if(list.open)list.querySelectorAll('[data-row-video]').forEach(function(v){if(!v.getAttribute('src')){v.src=v.dataset.rowVideo;v.preload='metadata';v.load();}});}
+  list.addEventListener('toggle',videos);videos();
+ });
  document.addEventListener('submit',function(event){
   if(event.defaultPrevented||event.target.matches('[data-playlist-grid]'))return;
   if(dirty()&&!confirm('Hay cambios sin guardar en las listas. ¿Descartarlos y continuar?'))event.preventDefault();

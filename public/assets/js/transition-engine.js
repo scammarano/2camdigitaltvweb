@@ -5,7 +5,7 @@
  const clamp=n=>Number.isFinite(Number(n))?Math.max(0,Math.min(3000,Math.round(Number(n)))):600;
  class SlideDeck {
   constructor(container){this.container=container;this.current=null;this.seq=0;}
-  clear(){++this.seq;this.container.replaceChildren();this.current=null;}
+  clear(){++this.seq;this.container.querySelectorAll('video').forEach(v=>{v.pause();v.removeAttribute('src');v.load();});this.container.replaceChildren();this.current=null;}
   async present(node,effect='fade',ms=600){
    const serial=++this.seq, old=this.current;
    effect=allowed.has(effect)?effect:'fade';ms=effect==='cut'?0:clamp(ms);

@@ -80,7 +80,7 @@ $media=dball('SELECT * FROM media WHERE '.$poolWhere.' ORDER BY name',$poolParam
 $filteredIds=array_map('intval',array_column($filtered,'id'));
 $items=$filteredIds?dball('SELECT i.*,p.name child_name,m.name media_name,m.mime media_mime FROM playlist_items i LEFT JOIN playlists p ON p.id=i.child_playlist_id LEFT JOIN media m ON m.id=i.media_id WHERE i.playlist_id IN ('.implode(',',array_fill(0,count($filteredIds),'?')).') ORDER BY i.playlist_id,i.position,i.id',$filteredIds):[];
 render('Listas de reproducción',function()use($lists,$filtered,$media,$items,$error,$ok,$query,$fOri,$fLayout,$scope,$createdCopy){
- echo '<link rel="stylesheet" href="'.h(url('assets/css/playlist-editor.css')).'?v=0427"><script defer src="'.h(url('assets/js/playlist-editor.js')).'?v=0427"></script>';
+ echo '<link rel="stylesheet" href="'.h(url('assets/css/playlist-editor.css')).'?v=0428"><script defer src="'.h(url('assets/js/playlist-editor.js')).'?v=0428"></script>';
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
  if($createdCopy)echo '<a class="btn btn-primary mb-3" href="'.h(url('playlists.php?company='.$createdCopy['company'].'#playlist-'.$createdCopy['id'])).'">Ver copia en la empresa de destino</a>';
  if(can('playlists.edit'))create_modal('Nueva lista',function()use($scope){echo '<input type="hidden" name="action" value="create">'.company_select($scope??0);field('name','Nombre');echo '<label>Orientación</label>'.sel('orientation',orientations(),'landscape').'<label>Formato</label>'.sel('layout_type',layouts()).'<label>Transición predeterminada</label>'.sel('transition_effect',transitions(),'fade');field('transition_ms','Duración del efecto (milisegundos)','number','600');});
