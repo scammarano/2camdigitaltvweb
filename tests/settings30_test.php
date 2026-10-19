@@ -10,7 +10,8 @@ execsql("INSERT INTO playlist_items(tenant_id,playlist_id,kind,media_id,position
 execsql("INSERT INTO playlists(tenant_id,name,orientation,layout_type,is_shared,mode_mask) VALUES(1,'Private30 forbidden','landscape','bottom',0,2)");$private=(int)db()->lastInsertId();
 execsql("INSERT INTO devices(tenant_id,name,orientation,mode) VALUES(2,'Screen30 preview fixture','landscape',1)");$did=(int)db()->lastInsertId();
 $before=(int)dbone('SELECT COUNT(*) n FROM media')['n'];$rev=ds_config_for_device($did,2)['revision'];$next=ds_assign_readable_playlist(2,$did,$pid,2,$rev,100);
-$c=ds_config_for_device($did,2);ck30($c['settings']['overlay_playlist_bottom']===$pid&&$next===$rev+1,'Shared assignment missing');ck30(count(expanded(2,$pid))===1,'Shared media not expanded');ck30((int)dbone('SELECT COUNT(*) n FROM media')['n']===$before,'Shared assignment copied media');
+$c=ds_config_for_device($did,2);ck30($c['settings']['overlay_playlist_bottom']===$pid&&$next===$rev+1,'Shared assignment missing');
+ck30($c['settings']['primary_mode']===1,'Assigning advertising silently changed operating module');ck30(count(expanded(2,$pid))===1,'Shared media not expanded');ck30((int)dbone('SELECT COUNT(*) n FROM media')['n']===$before,'Shared assignment copied media');
 no30(fn()=>ds_assign_readable_playlist(2,$did,$private,2,$next,100));no30(fn()=>ds_assign_readable_playlist(2,1,$pid,2,$next,100));no30(fn()=>ds_assign_readable_playlist(2,$did,$pid,1,$next,100));no30(fn()=>ds_assign_readable_playlist(2,$did,$pid,2,$rev,100));
 ob_start();ds_config_form($c['settings'],2,$did);$html=ob_get_clean();ck30(substr_count($html,'data-tab-target=')===8&&substr_count($html,'data-tab-panel=')===8,'Tabs missing');ck30(str_contains($html,'Shared30 selectable')&&!str_contains($html,'Private30 forbidden'),'Shared picker includes wrong tenant');
 $token=bin2hex(random_bytes(32));execsql('UPDATE devices SET device_token_hash=? WHERE id=? AND tenant_id=2',[hash('sha256',$token),$did]);
