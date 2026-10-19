@@ -87,6 +87,7 @@ jobs:
           php tests/device_pin31_test.php
           php tests/settings30_test.php
           php tests/settings30_page_test.php
+          php tests/devices31_page_test.php
           for action in create delete self role; do php tests/user_role_post_test.php "$action"; done
           for page in users roles applications playlist-generator playlist-guide; do php tests/portal29_page_test.php "$page"; done
       - uses: actions/setup-node@v4
@@ -103,6 +104,7 @@ jobs:
           node tests/playlist_editor_browser.cjs
           node tests/portal29_browser.cjs
           node tests/settings30_browser.cjs
+          node tests/devices31_browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

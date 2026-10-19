@@ -1,0 +1,23 @@
+const {chromium}=require('playwright');
+const assert=require('assert/strict');
+(async()=>{
+ const browser=await chromium.launch();
+ const page=await browser.newPage({viewport:{width:700,height:560}});
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8080/_ui-devices31.html');
+ const scroll=page.locator('#ds-devices-scroll');
+ assert.equal(await scroll.count(),1);
+ const widths=await scroll.evaluate(el=>({content:el.scrollWidth,viewport:el.clientWidth}));
+ assert(widths.content>widths.viewport,'Table not scrollable in narrow browser');
+ const pair=scroll.locator('tbody tr:first-child td:nth-child(2) button').filter({hasText:'Generar código'});
+ assert.equal(await pair.count(),1);
+ assert.equal(await pair.isVisible(),true);
+ await page.locator('[data-devices-step="1"]').click();
+ const left=await scroll.evaluate(el=>el.scrollLeft);
+ assert(left>0,'Right-arrow navigation did not move table');
+ await page.locator('[data-devices-step="-1"]').click();
+ await page.screenshot({path:'test-results/devices31-horizontal-tv.png'});
+ assert.deepEqual(errors,[]);
+ await browser.close();
+ console.log('DEVICES31_BROWSER_PASS visible pairing action + horizontal controls');
+})().catch(e=>{console.error(e);process.exit(1)});
