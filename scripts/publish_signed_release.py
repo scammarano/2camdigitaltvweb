@@ -29,7 +29,11 @@ with tempfile.TemporaryDirectory() as temporary:
     out = Path(temporary)
     package = out / meta['asset']
     assert re.fullmatch(r'SIGNAGE_UPDATE_v' + re.escape(version) + r'_[A-Z0-9_]+_RSA\.zip', package.name)
-    package.write_bytes(base64.b64decode((bundle / 'web-update.b64').read_bytes(), validate=False))
+    web_chunks = sorted(bundle.glob('web-*.b64'))
+    if web_chunks:
+        package.write_bytes(base64.b64decode(''.join(p.read_text().strip() for p in web_chunks)))
+    else:
+        package.write_bytes(base64.b64decode((bundle / 'web-update.b64').read_bytes(), validate=False))
     assert hashlib.sha256(package.read_bytes()).hexdigest() == meta['sha256']
     pub = bundle / 'update-public.txt'
     der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-in', str(pub), '-outform', 'DER'])
