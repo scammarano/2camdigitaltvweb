@@ -85,6 +85,7 @@ jobs:
           php tests/shared_service_test.php
           php tests/applications_generator_test.php
           php tests/device_pin31_test.php
+          php tests/overlay_shared31_test.php
           php tests/settings30_test.php
           php tests/settings30_page_test.php
           php tests/devices31_page_test.php

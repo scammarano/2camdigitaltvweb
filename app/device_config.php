@@ -43,7 +43,16 @@ function ds_config_form(array $c,int $tid,int $did):void {
  echo '<p class="alert alert-info">Las dimensiones se administran en Formatos de medios, no por pantalla. Requiere APK 0.4.15 o posterior.</p>';
  $groups=ds_config_schema()['groups'];echo '<div data-settings-tabs><div class="nav nav-pills flex-nowrap overflow-auto gap-2 mb-3" role="tablist">';foreach($groups as $index=>$title)echo '<button type="button" class="nav-link" role="tab" data-tab-target="'.$index.'">'.h($title).'</button>';echo '</div>';
  $group='';foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];
-  if($group!==$f['group']){if($group!=='')echo '</section>';echo '<section data-tab-panel="'.array_search($f['group'],$groups,true).'"><h5 class="border-bottom mt-4">'.h($f['group']).'</h5>';$group=$f['group'];if($group==='Overlay')echo '<p>Durante cada aparición se reproduce la playlist con sus duraciones y transiciones. Al terminar la ventana visible, espera la pausa configurada antes de volver a aparecer.</p>';}
+  if($group!==$f['group']){if($group!=='')echo '</section>';echo '<section data-tab-panel="'.array_search($f['group'],$groups,true).'"><h5 class="border-bottom mt-4">'.h($f['group']).'</h5>';$group=$f['group'];if($group==='Overlay')echo '<p><strong>Publicidad compartida:</strong> las listas y el formato elegidos aquí se utilizan en Overlay, Turnos y Marcador. La primera aparición ocurre al disponer de contenido; después se aplica la pausa.</p>';
+  if(in_array($group,['Turnos','Marcador deportivo'],true))echo '<p class="alert alert-info">Este módulo utiliza las listas publicitarias de Overlay. Aquí solo se configura el funcionamiento de '.h($group).'.</p>';}
+  // Legacy queue/scoreboard ad fields remain in the signed schema and JSON
+  // (old clients/backups) but are no longer independently editable.
+  if(in_array($f['group'],['Turnos','Marcador deportivo'],true) &&
+     ($f['type']==='playlist'||in_array($k,['queue_layout','scoreboard_layout',
+       'queue_ad_interval_sec','queue_ad_duration_sec','scoreboard_ad_interval_sec','scoreboard_ad_duration_sec'],true))){
+    echo '<input type="hidden" name="'.h($k).'" value="'.h((string)$c[$k]).'">';
+    continue;
+  }
   if($f['type']==='bool'){echo '<label class="d-block mb-2"><input type="checkbox" name="'.h($k).'"'.($c[$k]?' checked':'').'> '.h($f['label']).'</label>';continue;}
   if($f['type']==='mask'){echo '<details class="mb-3"><summary><strong>Avanzado: modos permitidos</strong> (no selecciona el modo actual)</summary><p class="small text-muted">Estos permisos limitan qué modos puede ejecutar la pantalla. El modo activo lo determina la programación del portal o la selección local.</p>';foreach(ds_config_schema()['modes'] as $id=>$label){$bit=1<<((int)$id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> '.h($label).'</label>';}echo '</details>';continue;}
   echo '<label class="form-label">'.h($k==='primary_mode'?'Modo de respaldo del portal (fuera de programación)':$f['label']).'</label>';
@@ -80,10 +89,10 @@ function ds_config_for_device(int $deviceId,int $tid):array {
  return ['revision'=>0,'settings'=>ds_config_validate($defaults),'changed_at'=>null];
 }
 function ds_mode_layout(array $c,int $mode):string {
- return match($mode){2=>match($c['overlay_layout']){'top'=>'bottom','left'=>'side',default=>$c['overlay_layout']},3=>$c['queue_layout'],4=>$c['scoreboard_layout'],default=>'fullscreen'};
+ return in_array($mode,[2,3,4],true)?match($c['overlay_layout']){'top'=>'bottom','left'=>'side',default=>$c['overlay_layout']}:'fullscreen';
 }
 function ds_mode_playlist(array $c,int $mode):int {
- return $mode===1?$c['signage_playlist_id']:$c[match($mode){2=>'overlay',3=>'queue',default=>'scoreboard'}.'_playlist_'.ds_mode_layout($c,$mode)];
+ return $mode===1?$c['signage_playlist_id']:$c['overlay_playlist_'.ds_mode_layout($c,$mode)];
 }
 function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
  require_once __DIR__.'/domain.php';
@@ -95,13 +104,13 @@ function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
   foreach(dball('SELECT COALESCE(si.playlist_id,s.playlist_id) playlist_id FROM schedules s LEFT JOIN schedule_items si ON si.schedule_id=s.id AND si.tenant_id=s.tenant_id WHERE s.device_id=? AND s.tenant_id=?',[$did,$tid]) as $r)$ids[]=(int)$r['playlist_id'];
  }
  foreach(array_unique($ids) as $pid){
-  $modeBit=1<<($mode-1);
+  $modeBit=$mode===1?1:2; // advertising for Overlay/Turnos/Sports
   $list=dbone('SELECT p.id FROM playlists p JOIN devices d ON (d.tenant_id=p.tenant_id OR p.is_shared=1) WHERE p.id=? AND d.tenant_id=? AND d.id=? AND (p.mode_mask & '.$modeBit.')<>0 AND p.layout_type=? AND (p.orientation=d.orientation OR p.orientation=?)',[$pid,$tid,$did,$layout,'any']);
   if(!$list)continue;
-  foreach(expanded($tid,$pid) as $item)if(($item['layout']??'fullscreen')===$layout && ($mode!==2||str_starts_with($item['mime'],'image/')))return;
+  foreach(expanded($tid,$pid) as $item)if(($item['layout']??'fullscreen')===$layout && ($mode===1||str_starts_with($item['mime'],'image/')))return;
  }
  $name=ds_config_schema()['modes'][(string)$mode];
- throw new RuntimeException($name.': asigna una playlist compatible y con contenido para '.$layout.' antes de activar'.($mode===2?' (Overlay requiere imágenes)':''));
+ throw new RuntimeException($name.': asigna una playlist compatible y con contenido para '.$layout.' antes de activar'.($mode!==1?' (Publicidad requiere imágenes)':''));
 }
 function ds_mode_activation_changed(array $old,array $new):bool {
  $mode=$new['primary_mode'];return $old['primary_mode']!==$mode || ds_mode_layout($old,$mode)!==ds_mode_layout($new,$mode) || ds_mode_playlist($old,$mode)!==ds_mode_playlist($new,$mode);
