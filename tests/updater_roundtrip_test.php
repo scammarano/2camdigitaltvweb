@@ -13,7 +13,7 @@ $public=openssl_pkey_get_details($private)['key'];file_put_contents($fixture.'/c
 $currentVersion=trim(file_get_contents($source.'/version.txt'));
 $paths=json_decode(file_get_contents(__DIR__.'/update_files.json'),true,32,JSON_THROW_ON_ERROR);$hashes=[];
 foreach($paths as $path)$hashes[$path]=hash_file('sha256',$source.'/'.$path);
-$manifest=['product'=>'digital-signage','version'=>$currentVersion,'min_version'=>'0.4.16','signature_algorithm'=>'RSA-SHA256','files'=>$hashes,'migrations'=>['database/migrations/0.4.31.php']];
+$manifest=['product'=>'digital-signage','version'=>$currentVersion,'min_version'=>'0.4.16','signature_algorithm'=>'RSA-SHA256','files'=>$hashes,'migrations'=>['database/migrations/0.4.32.php']];
 $raw=json_encode($manifest,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
 if(!openssl_sign($raw,$signature,$private,OPENSSL_ALGO_SHA256))throw new RuntimeException('Test signing failed');
 $package=$fixture.'/update.zip';$zip=new ZipArchive();$zip->open($package,ZipArchive::CREATE|ZipArchive::OVERWRITE);

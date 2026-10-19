@@ -5,7 +5,7 @@ require dirname(__DIR__).'/app/apk_repository.php';
 $key=ROOT.'/.release-assets/update-public.txt';
 copy($key,ROOT.'/config/update-rsa-pubkey.pem');
 $migration=file_get_contents(ROOT.'/database/migrations/0.4.2.php');preg_match('/\$pdo->exec\("(CREATE TABLE IF NOT EXISTS app_releases .*?)"\);/s',$migration,$match);db()->exec($match[1]);
-$m=require ROOT.'/database/migrations/0.4.31.php';$m(db());
+$m=require ROOT.'/database/migrations/0.4.32.php';$m(db());
 $token=getenv('GH_TOKEN');if(!is_string($token)||$token==='')throw new RuntimeException('CI read token missing');
 // Actions supplies its own short-lived installation credential, not a user PAT.
 // Provision only this isolated fixture; never print it or submit it to the PAT UI.
