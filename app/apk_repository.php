@@ -141,6 +141,13 @@ function apk_repositories_sync(bool $force=false,?callable $fetch=null,?callable
     // Skip previously imported assets, but new/untrusted assets must still verify before acceptance.
     $attempts=0;
     foreach($assets as $asset){
+     // The administrator explicitly renewed the Android-TV signing certificate
+     // for v0.4.22. Do not re-import pre-rotation signed envelopes when polling
+     // history with the new trust anchor; skipping is NOT accepting them.
+     if($platform==='android-tv' &&
+        hash_equals('52468eda51fbe7de6886fd800874f73566bdaa7165732e96f03764483840ec2f',(string)$source['certificate_sha256']) &&
+        preg_match('/_v(0\\.4\\.[0-9]+)-debug_RSA\\.zip$/D',(string)$asset['name'],$matches) &&
+        version_compare($matches[1],'0.4.22','<'))continue;
      $origin=dbone('SELECT r.version_name FROM apk_release_origins o JOIN app_releases r ON r.id=o.release_id WHERE o.platform=? AND o.repository=? AND o.asset_id=?',[$platform,$source['repository'],$asset['id']]);
      if($origin){if($latest==='')$latest=$origin['version_name'];continue;}
      if(++$attempts>3)break;
