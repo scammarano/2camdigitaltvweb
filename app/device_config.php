@@ -71,6 +71,9 @@ function ds_config_form(array $c,int $tid,int $did):void {
 function ds_config_validate_playlists(array $clean,int $tid,int $did):void {
  $d=dbone('SELECT orientation FROM devices WHERE id=? AND tenant_id=?',[$did,$tid]);if(!$d)throw new RuntimeException('Pantalla de otra empresa');
  foreach($clean as $key=>$id){
+  // Historic Turnos/Sports ad fields are preserved for older versions and
+  // backups, but unused values must not block publishing shared Overlay lists.
+  if(str_starts_with($key,'queue_playlist_')||str_starts_with($key,'scoreboard_playlist_'))continue;
   if(!str_contains($key,'playlist_')||!$id)continue;
   $layout=$key==='signage_playlist_id'?'fullscreen':preg_replace('/^(overlay|queue|scoreboard)_playlist_/','',$key);
   $p=ds_content_record('playlists',(int)$id,$tid);

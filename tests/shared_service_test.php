@@ -22,7 +22,7 @@ $_SESSION['user']=['id'=>211,'tenant_id'=>2];ck28(ds_content_record('playlists',
 ck28(expanded(2,$consumer)[0]['media_id']===$mid&&expanded(2,$consumer)[0]['duration']===0.1,'Shared playback reference');
 ck28((int)dbone('SELECT COUNT(*) n FROM media')['n']===$count&&glob(ROOT.'/storage/media/*/*')===$files,'Sharing copied media/files');
 reject28(fn()=>owned_edit_record('playlists',$root));reject28(fn()=>ds_playlist_save_grid(1,$root,[],'invalid'));
-$cfg=ds_config_defaults();$cfg['queue_playlist_bottom']=$root;ds_config_validate_playlists($cfg,2,2);
+$cfg=ds_config_defaults();$cfg['overlay_playlist_bottom']=$root;ds_config_validate_playlists($cfg,2,2);
 $_SESSION['user']=['id'=>100,'tenant_id'=>1];reject28(fn()=>ds_content_share('playlists',$root,1,false));
 execsql('DELETE FROM playlist_items WHERE playlist_id=?',[$consumer]);ds_content_share('playlists',$root,1,false);ck28(ds_readable_media($mid,2)===null,'Revocation did not close access');
 ds_content_share('media',$mid,1,true);ck28(ds_content_record('media',$mid,2)!==null,'Shared media missing');ds_content_share('media',$mid,1,false);
