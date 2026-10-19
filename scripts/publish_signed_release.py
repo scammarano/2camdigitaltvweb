@@ -48,6 +48,13 @@ with tempfile.TemporaryDirectory() as temporary:
             assert hashlib.sha256(data).hexdigest() == digest, path
             assert hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest() == tree[path], path
     assets = [package]
+    if 'public_key' in meta:
+        public_meta = meta['public_key']
+        assert public_meta['asset'] == '2CAM_SIGNAGE_RSA_PUBLIC_KEY_2026.pem'
+        public_export = out / public_meta['asset']
+        public_export.write_bytes(pub.read_bytes())
+        assert hashlib.sha256(public_export.read_bytes()).hexdigest() == public_meta['sha256']
+        assets.append(public_export)
     if 'android' in meta:
         android = meta['android']
         android_source=android['source_commit']
