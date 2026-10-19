@@ -88,5 +88,8 @@
   "public/users.php",
   "public/assets/js/settings-tabs.js",
   "database/migrations/0.4.30.php",
-  "version.txt"
+  "version.txt",
+  "database/migrations/0.4.31.php",
+  "app/device_pin.php",
+  "public/api-device-pin.php"
 ]
