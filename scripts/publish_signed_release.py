@@ -94,7 +94,10 @@ with tempfile.TemporaryDirectory() as temporary:
     notes_file.write_text(notes)
     existing = subprocess.run(['gh', 'api', f'repos/{repo}/releases/tags/{meta["tag"]}'], capture_output=True, text=True)
     if existing.returncode:
-        subprocess.run(['gh', 'release', 'create', meta['tag'], *map(str, assets), '--target', source, '--title', meta.get('title', 'Digital Signage Web ' + version), '--notes-file', str(notes_file)], check=True)
+        # Tag the current publication commit, not an older source commit: GITHUB_TOKEN
+        # cannot tag older commits containing workflow differences (GitHub 403).
+        # Verified source commit remains in signed release metadata.
+        subprocess.run(['gh', 'release', 'create', meta['tag'], *map(str, assets), '--target', os.environ['GITHUB_SHA'], '--title', meta.get('title', 'Digital Signage Web ' + version), '--notes-file', str(notes_file)], check=True)
     else:
         published = {a['name']: a for a in json.loads(existing.stdout)['assets']}
         for asset in assets:
@@ -105,3 +108,4 @@ with tempfile.TemporaryDirectory() as temporary:
             else:
                 subprocess.run(['gh', 'release', 'upload', meta['tag'], str(asset)], check=True)
     print('SIGNED_RELEASE_PUBLISHED', meta['tag'])
+
