@@ -1,6 +1,6 @@
 <?php
 /** Multi-tenant remote config editor, versioned backups and asynchronous delivery. */
-require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/device_config.php';
+require __DIR__.'/_init.php';require_once ROOT.'/app/domain.php';require_once ROOT.'/app/device_config.php';require_once ROOT.'/app/device_pin.php';
 require_permission('devices.view');$error='';$ok='';
 try{
  if($_SERVER['REQUEST_METHOD']==='POST'){
@@ -8,7 +8,13 @@ try{
   $d=is_super()?dbone('SELECT id,tenant_id,name FROM devices WHERE id=?',[$did]):dbone('SELECT id,tenant_id,name FROM devices WHERE id=? AND tenant_id=?',[$did,tenant()]);
   if(!$d)throw new RuntimeException('Pantalla no encontrada o sin permisos');$tid=(int)$d['tenant_id'];
   $action=(string)($_POST['action']??'');$uid=(int)user()['id'];
-  if($action==='save'){
+  if($action==='set_pin'){
+   if(!is_super())throw new RuntimeException('Solo SUPERADMIN puede asignar el PIN administrativo');
+   $pin=(string)($_POST['new_pin']??'');$confirm=(string)($_POST['confirm_pin']??'');
+   if(!hash_equals($pin,$confirm))throw new RuntimeException('La confirmación del PIN no coincide');
+   $pinRevision=ds_pin_issue($tid,$did,$pin,$uid);
+   $ok='Solicitud de PIN #'.$pinRevision.' registrada; pendiente de que la APK lo confirme. Nunca se muestra el PIN guardado.';
+  }elseif($action==='save'){
    $input=ds_config_form_input($_POST);
    $next=ds_config_publish($did,$tid,$input,(int)($_POST['revision']??-1),$uid);
    log_event('device_config_published',['device_id'=>$did,'tenant_id'=>$tid,'revision'=>$next]);$ok='Versión '.$next.' enviada; pendiente de confirmación de la APK.';
@@ -32,10 +38,10 @@ try{
  }
 }catch(Throwable $e){$error=$e instanceof PDOException?fault($e,'device_manager'):$e->getMessage();}
 $scope=company_scope(isset($_GET['company'])?(string)$_GET['company']:null);
-$rows=dball('SELECT d.id,d.name,d.tenant_id,t.name company_name,h.local_ip,h.app_version,h.active_mode,h.last_report,d.mode,cd.revision,cd.config_json,cr.applied_revision,cr.status,cr.config_json actual_json,cr.updated_at reported_at,cr.error_detail FROM devices d JOIN tenants t ON t.id=d.tenant_id LEFT JOIN device_health h ON h.device_id=d.id AND h.tenant_id=d.tenant_id LEFT JOIN device_config_desired cd ON cd.device_id=d.id AND cd.tenant_id=d.tenant_id LEFT JOIN device_config_reported cr ON cr.device_id=d.id AND cr.tenant_id=d.tenant_id WHERE '.($scope===null?'1=1':'d.tenant_id=?').' ORDER BY t.name,d.name',$scope===null?[]:[$scope]);
+$rows=dball('SELECT d.id,d.name,d.tenant_id,t.name company_name,h.local_ip,h.app_version,h.active_mode,h.last_report,d.mode,cd.revision,cd.config_json,cr.applied_revision,cr.status,cr.config_json actual_json,cr.updated_at reported_at,cr.error_detail,pc.revision pin_revision,pc.status pin_status,pc.expires_at pin_expires_at,pc.applied_at pin_applied_at FROM devices d JOIN tenants t ON t.id=d.tenant_id LEFT JOIN device_health h ON h.device_id=d.id AND h.tenant_id=d.tenant_id LEFT JOIN device_config_desired cd ON cd.device_id=d.id AND cd.tenant_id=d.tenant_id LEFT JOIN device_config_reported cr ON cr.device_id=d.id AND cr.tenant_id=d.tenant_id LEFT JOIN device_pin_commands pc ON pc.device_id=d.id AND pc.tenant_id=d.tenant_id WHERE '.($scope===null?'1=1':'d.tenant_id=?').' ORDER BY t.name,d.name',$scope===null?[]:[$scope]);
 render('Administración remota de APK',function()use($rows,$scope,$error,$ok){
  if($error)echo '<div class="alert alert-danger">'.h($error).'</div>';if($ok)echo '<div class="alert alert-success">'.h($ok).'</div>';
- echo '<p>Los cambios se reciben por HTTPS cuando la APK se conecta. «Pendiente» no significa «Aplicado». El modo activo se muestra cuando la APK lo reporta. Los ajustes locales de seguridad, el PIN, la identidad del equipo y los permisos Android no se controlan remotamente.</p>';
+ echo '<p>Los cambios se reciben por HTTPS cuando la APK se conecta. «Pendiente» no significa «Aplicado». El modo activo se muestra cuando la APK lo reporta. El PIN administrativo se puede enviar desde SUPERADMIN mediante una orden separada y protegida. Permisos Android y seguridad LAN siguen siendo locales.</p>';
  echo '<form class="ds-filters" method="get">'.company_filter_control($scope).'<button class="btn btn-primary">Filtrar</button></form>';
  echo '<div class="card table-responsive"><table class="table"><thead><tr><th>Empresa</th><th>Pantalla</th><th>APK</th><th>Modo principal</th><th>Modo activo (reportado)</th><th>Deseada</th><th>Aplicada</th><th>Estado</th><th>Último reporte</th><th>Acciones</th></tr></thead><tbody>';
  $modals='';
@@ -50,6 +56,15 @@ render('Administración remota de APK',function()use($rows,$scope,$error,$ok){
   echo '<div class="alert alert-secondary mb-3">Cada modo conserva su configuración. El modo principal funciona como respaldo de los bloques horarios. Para los controles de Turnos y Marcador usa <a href="'.h(url('live-panels.php')).'">Operación de pantalla inteligente</a>.</div>';
   ds_config_form($c,(int)$d['tenant_id'],$id);
   echo '<div class="ds-modal-actions"><button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit">Enviar configuración</button></div></form>';
+  if(is_super()){
+    $pinStatus=($d['pin_status']??null)==='applied'?'Aplicado en APK':
+        ((($d['pin_status']??null)==='pending' && !empty($d['pin_expires_at']) && strtotime((string)$d['pin_expires_at'])>time())?'Pendiente de recibir':'Sin orden activa / vencida');
+    echo '<hr><h6>PIN administrativo de la TV</h6><p>Estado: <strong>'.h($pinStatus).'</strong> · Solicitud #'.(int)($d['pin_revision']??0).'. Solo SUPERADMIN. No se guarda en la configuración compartida, ni en las copias de seguridad.</p>';
+    form_open();echo '<input type="hidden" name="action" value="set_pin"><input type="hidden" name="device_id" value="'.$id.'">';
+    echo '<div class="row g-2"><div class="col-md-6"><label>Nuevo PIN (6–12 dígitos)</label><input class="form-control" name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></div>';
+    echo '<div class="col-md-6"><label>Confirmar nuevo PIN</label><input class="form-control" name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></div></div>';
+    echo '<p class="small text-muted">Se enviará cuando el equipo esté conectado. Expira a las 48 horas. El estado «Pendiente» no significa que el dispositivo cambió el PIN.</p><button type="submit" class="btn btn-outline-primary">Asignar PIN a esta pantalla</button></form>';
+  }
   echo '<hr><h6>Respaldo y recuperación</h6><div class="d-flex gap-2 flex-wrap">';
   foreach(['desired'=>'Respaldar configuración deseada','reported'=>'Respaldar configuración reportada'] as $src=>$label){form_open();echo '<input type="hidden" name="device_id" value="'.$id.'"><input type="hidden" name="action" value="backup"><input type="hidden" name="source" value="'.$src.'"><button class="btn btn-outline-secondary btn-sm">'.h($label).'</button></form>';}
   echo '</div><div class="mt-3"><h6>Respaldos disponibles</h6>';foreach($backs as $b){echo '<div class="d-flex align-items-center gap-2 flex-wrap mb-2"><span>'.h($b['label']).' · '.h($b['source']).'</span><a class="btn btn-outline-secondary btn-sm" href="?export='.(int)$b['id'].'">Exportar JSON</a>';form_open();echo '<input type="hidden" name="device_id" value="'.$id.'"><input type="hidden" name="action" value="restore"><input type="hidden" name="revision" value="'.$rev.'"><input type="hidden" name="backup_id" value="'.(int)$b['id'].'"><button class="btn btn-sm btn-outline-primary" onclick="return confirm(&quot;¿Publicar respaldo como configuración nueva?&quot;)">Restaurar / enviar</button></form></div>';}

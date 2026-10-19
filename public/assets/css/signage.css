@@ -145,3 +145,13 @@ body.ds-login-body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Sego
 .ds-player-stage .ds-display-frame.ds-layout-bottom .ds-display-area{top:80%}
 .ds-preview-frame.ds-layout-side .ds-preview-content,
 .ds-player-stage .ds-display-frame.ds-layout-side .ds-display-area{left:60%}
+
+/* Devices on Fire/Downloader: remote buttons and visible horizontal scroll. */
+.ds-device-scroll-help{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0;padding:10px 12px;background:#eaf2ff;border:1px solid #cadcf5;border-radius:10px}
+.ds-device-scroll-help span{flex:1;min-width:180px;font-size:12px}
+.ds-body .ds-devices-scroll{width:100%;max-width:100%;overflow-x:scroll!important;overflow-y:auto!important;scrollbar-width:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+.ds-devices-scroll>table{min-width:1450px!important;width:max-content!important}
+.ds-devices-scroll th,.ds-devices-scroll td{white-space:nowrap!important}
+.ds-pair-inline{display:block;margin:8px 0 0!important}
+.ds-body .ds-devices-scroll td .ds-pair-inline .btn{min-height:38px;font-size:12px;white-space:nowrap}
+.ds-devices-scroll:focus-visible{outline:3px solid #3985ea;outline-offset:2px}
