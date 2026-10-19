@@ -63,6 +63,34 @@ function apk_repository_candidates(array $releases,string $platform):array {
  usort($out,static fn($a,$b)=>$b['id']<=>$a['id']);return $out;
 }
 /** Strict three-entry ZIP, bounded before decompressing; no archive-controlled filesystem paths. */
+/** Two isolated trust domains after Signage's 2026 RSA renewal.
+ * Signage AND portal updates use the new hosting-pinned key. Sports/Turnos
+ * retain their historical, fingerprint-pinned public verifier ONLY.
+ */
+function apk_verify_platform_signature(string $raw,string $signatureB64,string $platform):void {
+ if($platform==='android-tv') {
+  verify_update_signature($raw,$signatureB64,'RSA-SHA256');
+  return;
+ }
+ if(!in_array($platform,['sports-control','turnos-control'],true))
+  throw new RuntimeException('Plataforma de APK no autorizada para clave heredada');
+ $path=__DIR__.'/trust/legacy-apk-rsa-public.txt';
+ $pem=@file_get_contents($path);
+ if(!is_string($pem)||!str_contains($pem,'BEGIN PUBLIC KEY'))throw new RuntimeException('Clave RSA pública heredada no disponible');
+ $encoded=preg_replace('/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\\s+/','',$pem);
+ $der=is_string($encoded)?base64_decode($encoded,true):false;
+ if($der===false || !hash_equals('1c6623f7cd4ed5b1c18b7f3254e6e050a39c6bea8f2d7cd9faaecc56287a10f4',hash('sha256',$der)))
+  throw new RuntimeException('Huella pública heredada no autorizada');
+ $signature=base64_decode(trim($signatureB64),true);
+ if($signature===false)throw new RuntimeException('Firma RSA heredada inválida');
+ $key=openssl_pkey_get_public($pem);
+ if($key===false)throw new RuntimeException('Clave RSA heredada ilegible');
+ $meta=openssl_pkey_get_details($key);
+ if(!is_array($meta)||$meta['type']!==OPENSSL_KEYTYPE_RSA||$meta['bits']<3072)
+  throw new RuntimeException('Clave RSA heredada insegura');
+ if(openssl_verify($raw,$signature,$key,OPENSSL_ALGO_SHA256)!==1)
+  throw new RuntimeException('Firma heredada no válida para Sports/Turnos');
+}
 function apk_envelope_read(string $path,array $source):array {
  if(!is_file($path)||is_link($path)||filesize($path)>DS_GITHUB_ASSET_LIMIT)throw new RuntimeException('Paquete APK inexistente o demasiado grande');
  $z=new ZipArchive();if($z->open($path)!==true)throw new RuntimeException('Paquete APK ZIP inválido');
@@ -75,7 +103,7 @@ function apk_envelope_read(string $path,array $source):array {
   }
   $raw=$z->getFromName('manifest.json');$sig=$z->getFromName('manifest.sig');
   if(!is_string($raw)||!is_string($sig))throw new RuntimeException('Manifiesto o firma ilegibles');
-  verify_update_signature($raw,$sig,'RSA-SHA256');
+  apk_verify_platform_signature($raw,$sig,(string)$source['platform']);
   $m=json_decode($raw,true,16,JSON_THROW_ON_ERROR);
   if(!is_array($m)||($m['schema']??0)!==1||($m['product']??'')!=='2cam-apk'||($m['platform']??'')!==$source['platform']||($m['package']??'')!==$source['android_package']||($m['channel']??'')!=='debug')throw new RuntimeException('Identidad o canal del paquete APK no autorizado');
   if(!is_string($m['certificate_sha256']??null)||!hash_equals($source['certificate_sha256'],$m['certificate_sha256']))throw new RuntimeException('El certificado declarado no coincide con el autorizado');

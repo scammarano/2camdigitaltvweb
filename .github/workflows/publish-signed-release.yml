@@ -73,7 +73,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/apk-rotation
           gh release download web-v0.4.30 --pattern '2Cam_Digital_Signage_v0.4.21_DEBUG.apk' --dir /tmp/apk-rotation
-          gh release download web-v0.4.32 --pattern '2Cam_Digital_Signage_v0.4.22_DEBUG.apk' --dir /tmp/apk-rotation
+          gh release download web-v0.4.33 --pattern '2Cam_Digital_Signage_v0.4.22_DEBUG.apk' --dir /tmp/apk-rotation
           python3 -c 'import json,hashlib,pathlib; p=pathlib.Path("/tmp/apk-rotation"); m=json.loads(pathlib.Path(".release-assets/apk-envelope-manifest.json").read_text()); assert hashlib.sha256((p/"2Cam_Digital_Signage_v0.4.22_DEBUG.apk").read_bytes()).hexdigest()==m["sha256"]'
       - name: Enable KVM
         run: |
