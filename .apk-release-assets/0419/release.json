@@ -1,0 +1,8 @@
+{
+  "tag": "apk-v0.4.19-debug",
+  "source_commit": "f8e1c03252b70ef58b146e8020b7bea1dcba40d1",
+  "source_run": 39125631515,
+  "sha256": "1dcc70de1c5d51761bb4eea9ad8cfb7721a03223cfc601484f6283e948c1d191",
+  "envelope_sha256": "c1eb027ff6970ac568e7b2db0095b65950ab3e1e00d278d5f28985c8ee45eb87",
+  "notes": "Solo APK: la web conserva su versión0.4.29. Se importa en Pruebas y requiere promoción manual para Estable. Firma permanente compatible con las entregas anteriores; el instalador Android pide confirmación del usuario. No se ha instalado en un Fire físico ni se ha completado la conexión al catálogo central de Turnos/Sports. Detalle de correcciones y adopción inicial: https://github.com/scammarano/digital-signage-android/blob/f8e1c03252b70ef58b146e8020b7bea1dcba40d1/docs/CORRECCIONES_FIRE_INSTALADOR_FRANJA_v0419.md"
+}

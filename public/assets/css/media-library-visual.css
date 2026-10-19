@@ -1,0 +1,28 @@
+/* 2Cam Digital Signage 0.4.14 — Biblioteca: archivo real + diagrama contextual de presentación.
+   Portrait and landscape use the same exact proportions as the 0.4.9 guide. */
+.ds-media-grid th{vertical-align:middle;white-space:nowrap}
+.ds-media-grid td{vertical-align:middle}
+.ds-media-preview-cell{min-width:112px;width:112px}
+.ds-media-preview-frame{width:100px;height:74px;display:flex;align-items:center;justify-content:center;
+  border:1px solid #d3e0ef;border-radius:8px;background:#f2f6fb;overflow:hidden;text-decoration:none;color:#174589}
+.ds-media-preview-frame:focus-visible{outline:3px solid #1676da;outline-offset:2px}
+.ds-media-preview-frame img{width:100%;height:100%;object-fit:contain;display:block}
+.ds-media-preview-video{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:24px;color:#174589}
+.ds-media-preview-video small{font-size:9px;font-weight:700;letter-spacing:.08em}
+.ds-media-filename{min-width:215px;max-width:360px;overflow-wrap:anywhere}
+.ds-media-presentation{min-width:175px;max-width:235px;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+/* display:block fixes the previous span rendering as a very thin line */
+.ds-media-presentation .ds-preview-mini-screen{box-sizing:border-box;display:block;flex:none;
+  width:116px;max-width:116px;min-width:116px;aspect-ratio:16/9;height:auto;
+  margin:2px 0 3px;border:4px solid #293f5d;border-radius:7px;
+  background:repeating-linear-gradient(135deg,#1b344f,#1b344f 10px,#213d5b 11px,#213d5b 19px);
+  box-shadow:0 0 0 1px #8da0b7;position:relative;overflow:hidden}
+.ds-media-presentation .ds-preview-mini-screen[data-orientation="portrait"]{
+  width:57px;max-width:57px;min-width:57px;aspect-ratio:9/16}
+.ds-media-presentation .ds-preview-mini-screen .ds-mini-selected{
+  border:1px solid #d9ffe8;background:linear-gradient(135deg,#068c51,#13c183);position:absolute}
+.ds-media-presentation .ds-mini-selected::after{content:""!important;display:none!important}
+.ds-media-zone-name{font-size:12px;color:#172f4a;font-weight:750;line-height:1.3}
+.ds-media-zone-percent{font-size:11px;color:#496887;line-height:1.2}
+.ds-media-grid tbody tr:hover .ds-media-preview-frame{border-color:#739bcf}
+@media(max-width:990px){.ds-media-grid{min-width:1140px}.ds-media-presentation{min-width:160px}}

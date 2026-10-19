@@ -1,0 +1,45 @@
+/* 0.4.9 — clear distinction between target screen, display area and media file. */
+.ds-media-layout-guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,185px),1fr));gap:14px;margin:16px 0 20px}
+.ds-media-layout-card{border:2px solid #e3eaf5;border-radius:13px;background:#fff;padding:15px;text-align:left;display:flex;flex-direction:column;gap:9px;min-width:0;cursor:pointer;color:#163250;min-height:185px;transition:box-shadow .2s,border-color .2s;box-shadow:0 1px 7px #14345c0d}
+.ds-media-layout-card:hover,.ds-media-layout-card:focus{border-color:#2875dc;box-shadow:0 0 0 3px #2073d823;outline:none}
+.ds-media-layout-card[aria-pressed="true"]{border-color:#087e45;background:#f1fbf5;box-shadow:0 0 0 2px #087e4530}
+.ds-media-layout-card strong{font-size:13px}.ds-media-layout-card small{font-size:12px;color:#506888;font-weight:650}
+.ds-media-layout-card .ds-preview-mini-screen{height:100px}
+.ds-media-current{display:grid;grid-template-columns:minmax(120px,220px) minmax(0,1fr);align-items:center;gap:22px;padding:17px;border:1px solid #dce8f4;background:#f6faff;border-radius:12px;margin:12px 0 18px}
+.ds-media-screen-wrap{display:grid;place-items:center;min-height:130px}
+.ds-preview-mini-screen{position:relative;width:100%;max-width:160px;aspect-ratio:16/9;border:5px solid #263c5a;border-radius:8px;background:repeating-linear-gradient(135deg,#1b344f,#1b344f 10px,#213d5b 11px,#213d5b 19px);box-shadow:0 0 0 1px #879ab2,0 8px 16px #162f4414;overflow:hidden;margin:0 auto}
+.ds-preview-mini-screen[data-orientation="portrait"]{max-width:78px;aspect-ratio:9/16}
+.ds-preview-mini-screen .ds-mini-selected{position:absolute;border:2px solid #ebffe8;background:linear-gradient(130deg,#0d925f,#10b981);display:grid;place-items:center;color:#fff;font-weight:850;font-size:11px;overflow:hidden}
+.ds-preview-mini-screen .ds-mini-selected::after{content:"ARTE";font-size:clamp(7px,1vw,11px);line-height:1}
+.ds-preview-mini-screen[data-layout="fullscreen"] .ds-mini-selected{inset:0}
+.ds-preview-mini-screen[data-layout="bottom"] .ds-mini-selected{top:80%;left:0;width:100%;height:20%}
+.ds-preview-mini-screen[data-layout="side"] .ds-mini-selected{top:0;right:0;width:40%;height:100%}
+.ds-preview-mini-screen[data-layout="half_horizontal"] .ds-mini-selected{bottom:0;left:0;width:100%;height:50%}
+.ds-preview-mini-screen[data-layout="half_vertical"] .ds-mini-selected{top:0;right:0;width:50%;height:100%}
+.ds-media-geometry-title{font-size:16px;font-weight:850;color:#174589;margin-bottom:5px}
+.ds-media-geometry-dims{font-size:22px;font-weight:850;white-space:normal;color:#087e45}
+.ds-media-geometry-note{color:#516780;font-size:12px;line-height:1.5;margin:5px 0}
+.ds-media-format-hint{border-left:4px solid #174589;padding:9px 12px;background:#eef5ff;border-radius:5px;font-size:13px}
+.ds-media-orientation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:8px 0 10px}
+.ds-media-choice{border:2px solid #d5e2ef;background:white;padding:11px 8px;text-align:center;border-radius:12px;display:grid;place-items:center;gap:6px;cursor:pointer;min-height:130px}
+.ds-media-choice .ds-preview-mini-screen{height:65px;max-width:100px}
+.ds-media-choice .ds-preview-mini-screen[data-orientation="portrait"]{max-width:37px}
+.ds-media-choice[aria-pressed="true"]{border-color:#07833c;background:#effaf2;color:#0a5933}
+.ds-media-upload-modal .modal-dialog{max-width:900px}
+.ds-media-upload-modal .modal-body{max-height:75vh;overflow-y:auto}
+.ds-media-file-check{padding:10px 12px;background:#f3f6fb;border-radius:7px;font-size:12px;margin-top:10px;white-space:pre-line}
+.ds-media-file-check.is-error{background:#fff1f2;border-left:4px solid #c33443;color:#962d3a}
+.ds-media-file-check.is-ok{background:#ecfdf3;border-left:4px solid #18834e;color:#12613b}
+.ds-media-guide-help{font-size:12px;color:#4d6482}
+.ds-media-step{display:inline-flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:50%;background:#174589;color:white;font-weight:800;margin-right:8px}
+.ds-media-guide-table{overflow-x:auto}
+.ds-media-guide-table table{min-width:650px}
+.ds-media-guide-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.ds-media-guide-head>a{white-space:nowrap}
+@media(max-width:680px){.ds-media-current{grid-template-columns:1fr;text-align:center}.ds-media-orientation{gap:8px}.ds-media-layout-card{min-height:156px}.ds-media-upload-modal .modal-dialog{margin:.5rem}.ds-media-upload-modal .modal-body{max-height:80vh}}
+/* Preserve exact 16:9 / 9:16 screen proportions at all preview sizes. */
+.ds-media-layout-card .ds-preview-mini-screen{width:min(100%,160px);height:auto;aspect-ratio:16/9;flex:none}
+.ds-media-layout-card .ds-preview-mini-screen[data-orientation="portrait"]{width:min(100%,65px);height:auto;aspect-ratio:9/16}
+.ds-media-choice .ds-preview-mini-screen{width:min(100%,100px);height:auto;aspect-ratio:16/9}
+.ds-media-choice .ds-preview-mini-screen[data-orientation="portrait"]{width:min(100%,38px);height:auto;aspect-ratio:9/16}
+.ds-media-current .ds-preview-mini-screen[data-orientation="portrait"]{width:min(100%,85px);height:auto;aspect-ratio:9/16}

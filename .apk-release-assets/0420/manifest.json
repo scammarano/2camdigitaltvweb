@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "product": "2cam-apk",
+  "platform": "android-tv",
+  "package": "com.digitalsignage.tv",
+  "version_name": "0.4.20-debug",
+  "version_code": 420,
+  "min_sdk": 19,
+  "channel": "debug",
+  "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
+  "size": 2180530,
+  "sha256": "7e3ba66b974ed04f485f6d691a4b367acdff7e9ace018a4489f438c7434387c5",
+  "source_repository": "scammarano/digital-signage-android",
+  "source_commit": "7347db6f6121ea9280b751d6d37a2a21254326ab",
+  "notes": "Lee el catálogo central de sala/pista del portal 0.4.29+, con bearer de pantalla y copia privada ligada al portal y emparejamiento. Valida esquema, revisión y ámbito; conserva copia ante fallo de red y descarta asignaciones revocadas al reconectar. Muestra identidad, sala/pista y revisión local en HUD; no equivale a ACK formal ni a llamadas/puntos/WhatsApp integrados. Conserva instalador Fire, franja 20%, Sports LAN, firma permanente y 43 ajustes compartidos. Probado en emuladores API 22/29; hosting y Fire físico pendientes."
+}

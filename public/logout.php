@@ -1,0 +1,1 @@
+<?php require dirname(__DIR__).'/app/bootstrap.php';log_event('logout');session_destroy();redirect('login.php');

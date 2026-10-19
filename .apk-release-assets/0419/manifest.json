@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "product": "2cam-apk",
+  "platform": "android-tv",
+  "package": "com.digitalsignage.tv",
+  "version_name": "0.4.19-debug",
+  "version_code": 419,
+  "min_sdk": 19,
+  "channel": "debug",
+  "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
+  "size": 2172338,
+  "sha256": "1dcc70de1c5d51761bb4eea9ad8cfb7721a03223cfc601484f6283e948c1d191",
+  "source_repository": "scammarano/digital-signage-android",
+  "source_commit": "f8e1c03252b70ef58b146e8020b7bea1dcba40d1",
+  "notes": "Corrige apertura del instalador Fire OS/API19–23 con archivo verificado y conserva proveedor privado en API24+. Franja Sports LAN dimensionada una sola vez con el porcentaje central: 20% del lienzo, arte compatible a ancho completo. Marcador con puntos grandes y playlist independiente de Cartelera. Pruebas reales de instalador y geometría en emuladores API22/API29. Primera adopción desde versiones con apertura rota: abrir nueva APK con instalador externo/Downloader o adb install -r, sin desinstalar. Firma permanente, HUD y Sports LAN conservados. Prueba física Fire pendiente; conexión al nuevo catálogo central web aún pendiente."
+}

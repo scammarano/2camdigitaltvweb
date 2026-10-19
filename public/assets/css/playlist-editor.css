@@ -1,0 +1,31 @@
+.ds-playlist>summary{cursor:pointer;font-size:15px;color:#203e65;padding:3px 0;overflow-wrap:anywhere}
+.ds-playlist-meta{display:block;font-size:12px;color:#60758d;margin:6px 0 0 20px}
+.ds-playlist-content{margin-top:18px}
+.ds-grid-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.ds-playlist [hidden]{display:none!important}
+.ds-body .ds-playlist-grid td,.ds-body .ds-playlist-grid thead th{padding:10px 8px;overflow-wrap:normal}
+.ds-playlist-grid input{min-width:90px;max-width:135px}
+.ds-playlist-grid select{min-width:160px}
+.ds-playlist-grid .ds-row-name{min-width:155px;max-width:280px;overflow-wrap:anywhere}
+.ds-row-thumbnail{min-width:96px;width:96px}
+.ds-row-thumbnail img,.ds-row-thumbnail video{width:88px;height:60px;object-fit:contain;background:#edf2f8;border:1px solid #d7e2f0;border-radius:6px;display:block}
+.ds-row-thumbnail small{display:block;font-size:10px;color:#59718d}
+.ds-row-list-preview{display:grid;place-items:center;width:88px;height:60px;background:#edf4fc;border-radius:6px;text-decoration:none}
+.ds-rows-values{padding:15px;background:#eef4fc;border:1px solid #d7e2f0;border-radius:9px;margin-bottom:12px}
+.ds-playlist input[data-row-select],.ds-playlist input[data-rows-all]{min-width:16px;width:16px;height:16px}
+.ds-body .ds-playlist-actions{white-space:normal;min-width:200px}
+.ds-playlist-grid input:disabled,.ds-playlist-grid select:disabled{opacity:1;color:#314c6d;background:#f6f8fc;border-color:transparent}
+.ds-playlist.is-editing .ds-playlist-grid{border-left:3px solid #245ad4}
+.ds-playlist-actions{white-space:nowrap}
+
+/* Compact rows retain visible thumbnails and labels for remote and keyboard use. */
+.ds-body .ds-playlist-grid td,.ds-body .ds-playlist-grid thead th{padding:6px 5px}
+.ds-playlist-grid input{min-width:64px;max-width:90px;padding:5px 6px}
+.ds-playlist-grid select{min-width:120px;padding:5px 24px 5px 6px}
+.ds-playlist-grid .ds-row-name{min-width:120px;max-width:220px;font-size:12px}
+.ds-row-thumbnail{min-width:80px;width:80px}
+.ds-row-thumbnail img,.ds-row-thumbnail video,.ds-row-list-preview{width:72px;height:50px}
+.ds-body .ds-playlist-actions{min-width:136px;white-space:nowrap}
+.ds-playlist-actions form{display:inline-block;margin:0}
+.ds-playlist-actions .btn{padding:4px 7px;min-width:28px}
+.ds-grid-toolbar{gap:6px;margin-bottom:9px}

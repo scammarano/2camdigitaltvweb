@@ -1,0 +1,19 @@
+{
+  "tag": "web-v0.4.30",
+  "source_commit": "fda43ec437370817e81d2630cf57549be8a8d27a",
+  "asset": "SIGNAGE_UPDATE_v0.4.30_PESTANAS_FORMATOS_OVERLAY_RSA.zip",
+  "sha256": "54d4917a7367ed4b5aed772373ae7542f25b4db8335879447359eb8d124d4451",
+  "title": "Digital Signage0.4.30 · Pestañas, listas por formato y Overlay; APK0.4.21",
+  "notes": "Web0.4.30 y APK0.4.21-debug. Configuración por pestañas con43ajustes compartidos; TV con márgenes seguros, botones grandes y edición numérica por OK. IP visible y reportada. Probar lista sin modificar programación, descarga previa autenticada, listas compartidas asignables sin copiar archivos. Overlay reproduce sucesivos elementos con tiempos/transiciones durante toda la ventana y luego espera la pausa; imágenes, sin video Overlay. Corrección de arranque de vista previa. Generador por empresa → orientación de TV → formato → solo medios compatibles, validación de servidor y guía visual de diez formatos. Compatibilidad de modos derivada automáticamente; Cartelera solo pantalla completa; Overlay/Turnos/Marcador en los demás formatos de su orientación. Barra y franja son sinónimos; no se duplican geometrías. Logo aprobado en icono e inicio APK. Firma Android permanente compatible con19/20; ZIP RSA acumulativo desde0.4.16 con respaldo. CI PHP8.1/MySQL8/navegador y emuladores API22/29 deben pasar antes de publicación. No acredita prueba física Fire OS, instalación en hosting, ACKv2 formal ni motores remotos de llamadas/puntos/WhatsApp. Instalar primero web0.4.30 y después APK21; canal APK Pruebas, no promoción automática a estable.",
+  "android": {
+    "asset": "2Cam_Digital_Signage_v0.4.21_DEBUG.apk",
+    "sha256": "721bd80a2b6deea24929c1778db4c72f7a47f2726b48183e28cc4e0301abfe97",
+    "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
+    "source_commit": "b4ae2e0fc6d3d8aa437440b8821ff41204168d7b",
+    "source_run": 39145981504,
+    "envelope": {
+      "asset": "2CAM_APK_android-tv_v0.4.21-debug_RSA.zip",
+      "sha256": "4b22fabbaab23b17fbb9778746cbd824ca3abae21340dac22c56830c2c596a7c"
+    }
+  }
+}

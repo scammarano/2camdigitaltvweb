@@ -1,0 +1,16 @@
+/* 0.4.13 — library multi-select actions, compact visual presentation indicators. */
+.ds-bulk-toolbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;background:#f1f7ff;border:1px solid #cadaf0;border-radius:10px;padding:12px 15px;margin:12px 0 15px}
+.ds-bulk-toolbar small{color:#48637d}
+.ds-bulk-select-col{width:42px;min-width:42px;text-align:center;vertical-align:middle!important}
+.ds-media-grid>tbody>tr.ds-selected-row{background:#f0fbf3!important;box-shadow:inset 4px 0 0 #09823b}
+.ds-media-grid th{white-space:nowrap;vertical-align:middle}
+.ds-media-grid td{vertical-align:middle}
+.ds-presentation-icon{display:inline-block;width:98px;min-width:98px;vertical-align:middle}
+.ds-presentation-icon .ds-preview-mini-screen{max-width:84px;width:84px;border-width:3px;border-radius:5px;box-shadow:none}
+.ds-presentation-icon .ds-preview-mini-screen[data-orientation="portrait"]{width:31px;max-width:31px}
+.ds-presentation-ref{display:block;text-align:center;font-size:10px;line-height:1.2;color:#516780;margin-top:5px}
+.ds-presentation-icon .ds-mini-selected{border-width:1px}
+.ds-presentation-icon .ds-mini-selected::after{font-size:8px!important}
+.ds-bulk-warning{background:#eef5ff;border-left:4px solid #174589;padding:12px;border-radius:5px;font-size:14px}
+.ds-filter-field input[type="number"]{width:100%;min-width:100px}
+@media(max-width:740px){.ds-bulk-toolbar{align-items:flex-start}.ds-bulk-toolbar .btn{white-space:normal}.ds-presentation-icon{width:60px;min-width:60px}.ds-media-grid{min-width:950px}}

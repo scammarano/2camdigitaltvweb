@@ -1,14 +1,8 @@
-name: Validación portal PHP
+name: Web portal CI
+
 on:
   push:
-    branches: [main]
-    paths:
-      - 'app/**'
-      - 'public/**'
-      - 'database/**'
-      - 'config/**'
-      - 'version.txt'
-      - '.github/workflows/ci.yml'
+    branches: [main, feat/four-modes-parity-v0419]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -21,20 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: PHP 8.1
+      - name: PHP setup
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
           tools: none
-      - name: Validar PHP
+      - name: PHP syntax check
         shell: bash
         run: |
           set -euo pipefail
-          test -f version.txt
-          while IFS= read -r -d '' file; do
-            php -l "$file" >/dev/null
-          done < <(find app public database -type f -name '*.php' -print0)
-      - name: Rechazar datos privados y APK
+          while IFS= read -r -d '' file; do php -l "$file" >/dev/null; done < <(find app public database -type f -name '*.php' -print0)
+      - run: php tests/config_modes_test.php
+      - name: Check runtime files absent
         shell: bash
         run: |
           set -euo pipefail
@@ -42,6 +34,76 @@ jobs:
           test ! -e public/tv.apk
           test ! -e app/release-assets
           if find . -type f \( -name '*.apk' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
-            echo 'NO incluir credenciales, llaves privadas o APK en el repositorio web.'
-            exit 1
+            echo 'Error: private keys or APK binaries must not be committed.'; exit 1
           fi
+          test -f version.txt
+
+  config-database:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: signage_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -ptestpass"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo_mysql, zip, openssl, dom
+      - name: Configure isolated database and verify tenant isolation
+        run: |
+          php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
+          php tests/config_tenant_test.php
+          php -r 'require "app/bootstrap.php"; $m=require ROOT."/database/migrations/0.4.30.php"; $m(db());'
+          php tests/github_updater_test.php
+          php tests/device_crud_test.php forged
+          php tests/device_crud_test.php identity
+          php tests/device_crud_test.php foreign
+          php tests/updater_roundtrip_test.php
+          php tests/media_formats_test.php
+          php tests/playlist_copy_test.php
+          php tests/playlist_page_test.php view
+          php tests/playlist_page_test.php copy
+          php tests/playlist_page_test.php forbidden
+          php tests/playlist_editor_test.php
+          php tests/playlist_grid_post_test.php
+          php tests/playlist_bulk_test.php
+          for action in duplicate_row bulk_duplicate bulk_delete separator forged; do php tests/playlist_row_post_test.php "$action"; done
+          for page in playlists media devices schedules mode-schedules index; do
+            for scope in selected all tenant; do php tests/portal_scope_page_test.php "$page" "$scope"; done
+          done
+          php tests/portal_scope_page_test.php schedules screen
+          php tests/company_context_clear_test.php valid
+          php tests/company_context_clear_test.php forged
+          php tests/apk_repository_test.php
+          php tests/shared_service_test.php
+          php tests/applications_generator_test.php
+          php tests/settings30_test.php
+          php tests/settings30_page_test.php
+          for action in create delete self role; do php tests/user_role_post_test.php "$action"; done
+          for page in users roles applications playlist-generator playlist-guide; do php tests/portal29_page_test.php "$page"; done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Browser checks and visual evidence
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+          php -S 127.0.0.1:8080 -t public >test-results/php-server.log 2>&1 &
+          python3 tests/shared_service_http.py
+          python3 tests/application_config_http.py
+          python3 tests/settings30_http.py
+          node tests/playlist_editor_browser.cjs
+          node tests/portal29_browser.cjs
+          node tests/settings30_browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portal-editor-visual-checks
+          path: test-results/

@@ -1,0 +1,97 @@
+name: Publish verified standalone APK
+on:
+  push:
+    branches: [feat/four-modes-parity-v0419]
+    paths: ['.apk-release-assets/**', 'scripts/publish_signed_apk.py', '.github/workflows/publish-signed-apk.yml', 'tests/apk_standalone_live_test.php']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'build-tools;35.0.0'
+      - name: Check source CI and permanent signature, then publish APK and RSA envelope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 scripts/publish_signed_apk.py
+  verify-live-import:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: signage_apk_import
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -ptestpass"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: pdo_mysql, zip, openssl, curl
+      - name: Import the actual published APK into the isolated portal catalog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","db_host"=>"127.0.0.1","db_name"=>"signage_apk_import","db_user"=>"root","db_pass"=>"testpass"],true).";");'
+          php tests/config_tenant_test.php
+          php tests/apk_standalone_live_test.php
+  verify-upgrade-api22:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - name: Download exact permanently signed deliveries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p /tmp/apk20-upgrade
+          gh release download apk-v0.4.19-debug --pattern '2Cam_Digital_Signage_v0.4.19_DEBUG.apk' --dir /tmp/apk20-upgrade
+          gh release download apk-v0.4.20-debug --pattern '2Cam_Digital_Signage_v0.4.20_DEBUG.apk' --dir /tmp/apk20-upgrade
+          python3 -c 'import json,hashlib,pathlib; p=pathlib.Path("/tmp/apk20-upgrade"); m=json.loads(pathlib.Path(".apk-release-assets/0420/manifest.json").read_text()); assert hashlib.sha256((p/"2Cam_Digital_Signage_v0.4.19_DEBUG.apk").read_bytes()).hexdigest()=="1dcc70de1c5d51761bb4eea9ad8cfb7721a03223cfc601484f6283e948c1d191"; assert hashlib.sha256((p/"2Cam_Digital_Signage_v0.4.20_DEBUG.apk").read_bytes()).hexdigest()==m["sha256"]'
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 22
+          target: default
+          arch: x86_64
+          profile: Nexus 6
+          disable-animations: true
+          script: |
+            adb install /tmp/apk20-upgrade/2Cam_Digital_Signage_v0.4.19_DEBUG.apk
+            adb shell run-as com.digitalsignage.tv mkdir -p files
+            adb shell "run-as com.digitalsignage.tv sh -c 'echo preserved-v0419 > files/upgrade-proof'"
+            adb install -r /tmp/apk20-upgrade/2Cam_Digital_Signage_v0.4.20_DEBUG.apk
+            adb shell run-as com.digitalsignage.tv cat files/upgrade-proof | grep -F preserved-v0419
+            adb shell dumpsys package com.digitalsignage.tv | grep -F versionName=0.4.20-debug
+            echo UPGRADE_19_TO_20_DATA_RETAINED
