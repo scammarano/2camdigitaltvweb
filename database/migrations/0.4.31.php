@@ -16,5 +16,11 @@ return static function(PDO $pdo):void{
         FOREIGN KEY(device_id) REFERENCES devices(id) ON DELETE CASCADE,
         FOREIGN KEY(tenant_id) REFERENCES tenants(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // Explicit 2026 test-key renewal. Migrate only the known old built-in
+    // Android-TV pin; never overwrite a customer-managed different certificate.
+    $old='5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a';
+    $new='52468eda51fbe7de6886fd800874f73566bdaa7165732e96f03764483840ec2f';
+    $pin=$pdo->prepare("UPDATE apk_repository_sources SET certificate_sha256=?,revision=revision+1,updated_at=UTC_TIMESTAMP() WHERE platform='android-tv' AND repository='scammarano/2camdigitaltvweb' AND certificate_sha256=?");
+    $pin->execute([$new,$old]);
     $pdo->exec("INSERT IGNORE INTO schema_migrations(id) VALUES('0.4.31')");
 };
