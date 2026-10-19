@@ -23,7 +23,7 @@
   const scroller=document.getElementById('ds-devices-scroll');
   if(!scroller)return;
   document.querySelectorAll('[data-devices-step]').forEach(button=>{
-    button.addEventListener('click',()=>{scroller.scrollLeft+=Number(button.getAttribute('data-devices-step'))*550;scroller.focus();});
+    button.addEventListener('click',()=>{scroller.focus();scroller.scrollLeft+=Number(button.getAttribute('data-devices-step'))*550;});
   });
   scroller.addEventListener('keydown',e=>{
     if(e.key==='ArrowRight'||e.key==='ArrowLeft'){

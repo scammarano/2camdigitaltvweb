@@ -13,6 +13,7 @@ const assert=require('assert/strict');
  assert.equal(await pair.count(),1);
  assert.equal(await pair.isVisible(),true);
  await page.locator('[data-devices-step="1"]').click();
+ await page.waitForFunction(()=>document.getElementById('ds-devices-scroll').scrollLeft>0,null,{timeout:3500});
  const left=await scroll.evaluate(el=>el.scrollLeft);
  assert(left>0,'Right-arrow navigation did not move table');
  await page.locator('[data-devices-step="-1"]').click();
