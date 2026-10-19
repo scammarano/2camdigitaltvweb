@@ -45,8 +45,8 @@ function ds_config_form(array $c,int $tid,int $did):void {
  $group='';foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];
   if($group!==$f['group']){if($group!=='')echo '</section>';echo '<section data-tab-panel="'.array_search($f['group'],$groups,true).'"><h5 class="border-bottom mt-4">'.h($f['group']).'</h5>';$group=$f['group'];if($group==='Overlay')echo '<p>Durante cada aparición se reproduce la playlist con sus duraciones y transiciones. Al terminar la ventana visible, espera la pausa configurada antes de volver a aparecer.</p>';}
   if($f['type']==='bool'){echo '<label class="d-block mb-2"><input type="checkbox" name="'.h($k).'"'.($c[$k]?' checked':'').'> '.h($f['label']).'</label>';continue;}
-  if($f['type']==='mask'){echo '<label>'.h($f['label']).'</label>';foreach(ds_config_schema()['modes'] as $id=>$label){$bit=1<<((int)$id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> '.h($label).'</label>';}continue;}
-  echo '<label class="form-label">'.h($f['label']).'</label>';
+  if($f['type']==='mask'){echo '<details class="mb-3"><summary><strong>Avanzado: modos permitidos</strong> (no selecciona el modo actual)</summary><p class="small text-muted">Estos permisos limitan qué modos puede ejecutar la pantalla. El modo activo lo determina la programación del portal o la selección local.</p>';foreach(ds_config_schema()['modes'] as $id=>$label){$bit=1<<((int)$id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> '.h($label).'</label>';}echo '</details>';continue;}
+  echo '<label class="form-label">'.h($k==='primary_mode'?'Modo de respaldo del portal (fuera de programación)':$f['label']).'</label>';
   if($f['type']==='playlist'){
    $modeBit=str_starts_with($k,'overlay_')?2:(str_starts_with($k,'queue_')?4:(str_starts_with($k,'scoreboard_')?8:1));
    $options=[0=>($k==='signage_playlist_id'?'Programación del portal':'Sin asignar')];
