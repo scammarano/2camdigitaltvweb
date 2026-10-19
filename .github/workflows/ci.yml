@@ -37,6 +37,20 @@ jobs:
             echo 'Error: private keys or APK binaries must not be committed.'; exit 1
           fi
           test -f version.txt
+      - name: Archive reviewed source for offline signing
+        if: github.ref == 'refs/heads/feat/device-log-export-v0431'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p source-delivery
+          git archive --format=zip --output=source-delivery/web-0431-source.zip HEAD app public database tests/update_files.json version.txt
+          sha256sum source-delivery/web-0431-source.zip > source-delivery/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/feat/device-log-export-v0431'
+        with:
+          name: web-0431-source-for-offline-signing
+          path: source-delivery/
+          retention-days: 10
 
   config-database:
     runs-on: ubuntu-latest
