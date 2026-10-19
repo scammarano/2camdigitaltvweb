@@ -21,7 +21,7 @@ meta = json.loads((bundle / 'release.json').read_text())
 repo = os.environ['GH_REPO']
 source = meta['source_commit']
 assert re.fullmatch(r'[a-f0-9]{40}', source)
-assert re.fullmatch(r'web-v0\.4\.(20|21|22|23|24|25|26|27|28|29|30)', meta['tag'])
+assert re.fullmatch(r'web-v0\.4\.(20|21|22|23|24|25|26|27|28|29|30|31)', meta['tag'])
 version = meta['tag'][5:]
 runs = api(f'repos/{repo}/actions/runs?head_sha={source}&per_page=30')['workflow_runs']
 assert any(r['name'] == 'Web portal CI' and r['conclusion'] == 'success' for r in runs), 'Source CI has not passed'
@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert hashlib.sha256(package.read_bytes()).hexdigest() == meta['sha256']
     pub = bundle / 'update-public.txt'
     der = subprocess.check_output(['openssl', 'pkey', '-pubin', '-in', str(pub), '-outform', 'DER'])
-    assert hashlib.sha256(der).hexdigest() == '1c6623f7cd4ed5b1c18b7f3254e6e050a39c6bea8f2d7cd9faaecc56287a10f4'
+    assert hashlib.sha256(der).hexdigest() == '5ad31c4313966cbb414facb56fcd8196be065910201aabfedfbee042bc2c49ae'
     with zipfile.ZipFile(package) as archive:
         raw = archive.read('manifest.json')
         manifest = json.loads(raw)
@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory() as temporary:
         android_jobs=api(f'repos/scammarano/digital-signage-android/actions/runs/{android["source_run"]}/jobs')['jobs']
         assert all(any(j['name']==f'build-test ({sdk})' and j['conclusion']=='success' for j in android_jobs) for sdk in [22,29]),'Android API22/API29 proof missing'
         apk = out / android['asset']
-        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16|17|18|21)_DEBUG\.apk', apk.name)
+        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16|17|18|21|22)_DEBUG\.apk', apk.name)
         chunks = sorted(bundle.glob('android-*.b64'))
         assert chunks
         apk.write_bytes(base64.b64decode(''.join(p.read_text().strip() for p in chunks)))
@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory() as temporary:
             (out / 'apk-manifest.sig').write_bytes(base64.b64decode(envelope_sig, validate=False))
             subprocess.run(['openssl', 'dgst', '-sha256', '-verify', str(pub), '-signature', str(out / 'apk-manifest.sig'), str(out / 'apk-manifest.json')], check=True)
             assert signed['platform'] == 'android-tv' and signed['package'] == 'com.digitalsignage.tv' and signed['channel'] == 'debug'
-            assert signed['certificate_sha256'] == android['certificate_sha256'] == '5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a'
+            assert signed['certificate_sha256'] == android['certificate_sha256'] == '52468eda51fbe7de6886fd800874f73566bdaa7165732e96f03764483840ec2f'
             assert signed['sha256'] == android['sha256'] and signed['size'] == apk.stat().st_size
             envelope = out / envelope_meta['asset']
             assert envelope.name == f'2CAM_APK_android-tv_v{signed["version_name"]}_RSA.zip'
