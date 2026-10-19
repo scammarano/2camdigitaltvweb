@@ -89,8 +89,12 @@ jobs:
           disable-animations: true
           script: |
             adb install /tmp/apk-rotation/2Cam_Digital_Signage_v0.4.21_DEBUG.apk
-            if adb install -r /tmp/apk-rotation/2Cam_Digital_Signage_v0.4.22_DEBUG.apk > /tmp/rotation.txt 2>&1; then echo "Unexpected signature compatibility"; exit 1; fi
+            adb shell dumpsys package com.digitalsignage.tv | grep -F versionName=0.4.21-debug
+            adb install -r /tmp/apk-rotation/2Cam_Digital_Signage_v0.4.22_DEBUG.apk > /tmp/rotation.txt 2>&1 || true
             cat /tmp/rotation.txt
+            # On older ADB builds the command exit status can be success even
+            # when PackageManager prints Failure. Inspect the installed version.
+            adb shell dumpsys package com.digitalsignage.tv | grep -F versionName=0.4.21-debug
             echo ROTATION_2026_OLD_SIGNATURE_REJECTED
             adb uninstall com.digitalsignage.tv
             adb install /tmp/apk-rotation/2Cam_Digital_Signage_v0.4.22_DEBUG.apk
