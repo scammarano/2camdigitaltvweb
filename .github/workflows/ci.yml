@@ -84,6 +84,7 @@ jobs:
           php tests/apk_repository_test.php
           php tests/shared_service_test.php
           php tests/applications_generator_test.php
+          php tests/device_pin31_test.php
           php tests/settings30_test.php
           php tests/settings30_page_test.php
           for action in create delete self role; do php tests/user_role_post_test.php "$action"; done
