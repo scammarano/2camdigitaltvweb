@@ -29,7 +29,7 @@ with tempfile.TemporaryDirectory() as temporary:
     out = Path(temporary)
     package = out / meta['asset']
     assert re.fullmatch(r'SIGNAGE_UPDATE_v' + re.escape(version) + r'_[A-Z0-9_]+_RSA\.zip', package.name)
-    web_chunks = sorted(bundle.glob('web-*.b64'))
+    web_chunks = sorted(bundle.glob('web-[0-9][0-9][0-9].b64'))
     if web_chunks:
         package.write_bytes(base64.b64decode(''.join(p.read_text().strip() for p in web_chunks)))
     else:
