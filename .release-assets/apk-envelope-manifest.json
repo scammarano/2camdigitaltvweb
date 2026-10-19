@@ -3,14 +3,12 @@
   "product": "2cam-apk",
   "platform": "android-tv",
   "package": "com.digitalsignage.tv",
-  "version_name": "0.4.21-debug",
-  "version_code": 421,
+  "version_name": "0.4.18-debug",
+  "version_code": 418,
   "min_sdk": 19,
   "channel": "debug",
   "certificate_sha256": "5390caf27181bb1163bb165867be5a5a83e748899957f0e0f68606ed6282f47a",
-  "size": 2864644,
-  "sha256": "721bd80a2b6deea24929c1778db4c72f7a47f2726b48183e28cc4e0301abfe97",
-  "source_repository": "scammarano/digital-signage-android",
-  "source_commit": "b4ae2e0fc6d3d8aa437440b8821ff41204168d7b",
-  "notes": "Pestañas en TV y LAN, números editables con OK, IP visible, Probar listas sin cambiar programación, Overlay reproduce su lista durante la ventana completa, logo aprobado en icono e inicio. Requiere portal0.4.30 para descargar vistas previas no almacenadas. Lee el catálogo central de sala/pista del portal 0.4.29+, con bearer de pantalla y copia privada ligada al portal y emparejamiento. Valida esquema, revisión y ámbito; conserva copia ante fallo de red y descarta asignaciones revocadas al reconectar. Muestra identidad, sala/pista y revisión local en HUD; no equivale a ACK formal ni a llamadas/puntos/WhatsApp integrados. Conserva instalador Fire, franja 20%, Sports LAN, firma permanente y 43 ajustes compartidos. Probado en emuladores API 22/29; hosting y Fire físico pendientes."
+  "size": 2164146,
+  "sha256": "8d22b3812e069edc8d5adada9c678e73a5e0c5909c8f5129d9646e7e1fd04e92",
+  "notes": "Suspensión de servicio por pantalla con revisión, persistencia y consulta remota aproximada de15s. Detiene reproducción y ventanas Overlay antes de confirmar. No se anula desde ajustes locales/LAN. Requiere web0.4.28 y conexión para recibir nuevas órdenes. Conserva décimas, cuatro modos, HUD y Sports LAN, API19+. Pruebas API22 correctas; firma permanente compatible con las entregas0.4.14–0.4.17. Prueba física pendiente."
 }

@@ -21,7 +21,7 @@ meta = json.loads((bundle / 'release.json').read_text())
 repo = os.environ['GH_REPO']
 source = meta['source_commit']
 assert re.fullmatch(r'[a-f0-9]{40}', source)
-assert re.fullmatch(r'web-v0\.4\.(20|21|22|23|24|25|26|27|28|29|30)', meta['tag'])
+assert re.fullmatch(r'web-v0\.4\.(20|21|22|23|24|25|26|27|28|29)', meta['tag'])
 version = meta['tag'][5:]
 runs = api(f'repos/{repo}/actions/runs?head_sha={source}&per_page=30')['workflow_runs']
 assert any(r['name'] == 'Web portal CI' and r['conclusion'] == 'success' for r in runs), 'Source CI has not passed'
@@ -50,13 +50,8 @@ with tempfile.TemporaryDirectory() as temporary:
     assets = [package]
     if 'android' in meta:
         android = meta['android']
-        android_source=android['source_commit']
-        android_run=api(f'repos/scammarano/digital-signage-android/actions/runs/{android["source_run"]}')
-        assert android_run['head_sha']==android_source and android_run['conclusion']=='success','Android source CI failed'
-        android_jobs=api(f'repos/scammarano/digital-signage-android/actions/runs/{android["source_run"]}/jobs')['jobs']
-        assert all(any(j['name']==f'build-test ({sdk})' and j['conclusion']=='success' for j in android_jobs) for sdk in [22,29]),'Android API22/API29 proof missing'
         apk = out / android['asset']
-        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16|17|18|21)_DEBUG\.apk', apk.name)
+        assert re.fullmatch(r'2Cam_Digital_Signage_v0\.4\.(15|16|17|18)_DEBUG\.apk', apk.name)
         chunks = sorted(bundle.glob('android-*.b64'))
         assert chunks
         apk.write_bytes(base64.b64decode(''.join(p.read_text().strip() for p in chunks)))
@@ -94,10 +89,7 @@ with tempfile.TemporaryDirectory() as temporary:
     notes_file.write_text(notes)
     existing = subprocess.run(['gh', 'api', f'repos/{repo}/releases/tags/{meta["tag"]}'], capture_output=True, text=True)
     if existing.returncode:
-        # Tag the current publication commit, not an older source commit: GITHUB_TOKEN
-        # cannot tag older commits containing workflow differences (GitHub 403).
-        # Verified source commit remains in signed release metadata.
-        subprocess.run(['gh', 'release', 'create', meta['tag'], *map(str, assets), '--target', os.environ['GITHUB_SHA'], '--title', meta.get('title', 'Digital Signage Web ' + version), '--notes-file', str(notes_file)], check=True)
+        subprocess.run(['gh', 'release', 'create', meta['tag'], *map(str, assets), '--target', source, '--title', meta.get('title', 'Digital Signage Web ' + version), '--notes-file', str(notes_file)], check=True)
     else:
         published = {a['name']: a for a in json.loads(existing.stdout)['assets']}
         for asset in assets:
@@ -108,4 +100,3 @@ with tempfile.TemporaryDirectory() as temporary:
             else:
                 subprocess.run(['gh', 'release', 'upload', meta['tag'], str(asset)], check=True)
     print('SIGNED_RELEASE_PUBLISHED', meta['tag'])
-

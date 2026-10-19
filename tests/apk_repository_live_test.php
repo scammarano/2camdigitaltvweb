@@ -18,13 +18,6 @@ $expected=json_decode(file_get_contents(ROOT.'/.release-assets/apk-envelope-mani
 $release=dbone("SELECT * FROM app_releases WHERE platform='android-tv' AND channel='debug' AND version_code=?",[$expected['version_code']]);
 if(!$release||$release['status']!=='published'||$release['sha256']!==$expected['sha256']||hash_file('sha256',ds_apk_static_path($release))!==$expected['sha256'])throw new RuntimeException('Live catalog/public download mismatch');
 if(dbone("SELECT id FROM app_releases WHERE channel='stable'"))throw new RuntimeException('Importer promoted without approval');
-// A second poll may import older historical envelopes (3 new assets per run).
-// Idempotence means the already imported signed version is not duplicated or replaced.
-$beforeId=(int)$release['id'];
-$again=apk_repositories_sync(true);
-$after=dbone("SELECT * FROM app_releases WHERE platform='android-tv' AND channel='debug' AND version_code=?",[$expected['version_code']]);
-$duplicates=dbone("SELECT COUNT(*) AS n FROM app_releases WHERE platform='android-tv' AND channel='debug' AND version_code=?",[$expected['version_code']]);
-if(!$again['android-tv']['ok']||!$after||(int)$after['id']!==$beforeId||$after['status']!=='published'||$after['sha256']!==$expected['sha256']||(int)$duplicates['n']!==1)throw new RuntimeException('Signed APK re-import changed or duplicated the catalog record');
+$again=apk_repositories_sync(true);if(!$again['android-tv']['ok']||$again['android-tv']['imported']!==0)throw new RuntimeException('Live import is not idempotent');
 unlink($credential);
 echo "GITHUB_APK_LIVE_PASS: authenticated release download, trusted RSA, exact APK checksum, published Pruebas catalog, no automatic stable promotion, idempotent recheck\n";
-

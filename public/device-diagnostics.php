@@ -33,8 +33,24 @@ $events=dball("SELECT e.*,d.name AS device_name,t.name AS tenant_name FROM devic
 if(isset($_GET['export'])){
  $format=(string)$_GET['export'];
  if($format!=='json') {http_response_code(400);exit('Formato inválido');}
- header('Content-Type: application/json; charset=utf-8');header('Content-Disposition: attachment; filename="signage-device-logs.json"');
- echo json_encode(['company_id'=>$company,'device_id'=>$id?:null,'exported_at'=>gmdate('c'),'events'=>$events],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE);exit;
+ // Stream EVERY event matching the authorized device/company filter. The grid
+ // intentionally stays at 300 recent entries; an export must not inherit that cap.
+ header('Content-Type: application/json; charset=utf-8');
+ header('Content-Disposition: attachment; filename="signage-device-logs.json"');
+ header('Cache-Control: no-store, private');
+ header('X-Content-Type-Options: nosniff');
+ $stmt=db()->prepare("SELECT e.*,d.name AS device_name,t.name AS tenant_name FROM device_diag_events e JOIN devices d ON d.id=e.device_id AND d.tenant_id=e.tenant_id JOIN tenants t ON t.id=e.tenant_id $where ORDER BY e.id ASC");
+ $stmt->execute($args);
+ $header=['company_id'=>$company,'device_id'=>$id?:null,'level'=>$level,'exported_at'=>gmdate('c')];
+ echo substr(json_encode($header,JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR),0,-1).',"events":[';
+ $first=true;
+ while($row=$stmt->fetch(PDO::FETCH_ASSOC)){
+   if(!$first)echo ',';
+   echo json_encode($row,JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);
+   $first=false;
+ }
+ echo ']}';
+ exit;
 }
 $companies=is_super()?dball('SELECT id,name FROM tenants ORDER BY name'):[];
 render('Diagnóstico de pantallas',function()use($company,$companies,$devices,$id,$level,$events,$notice,$error){
@@ -52,7 +68,7 @@ render('Diagnóstico de pantallas',function()use($company,$companies,$devices,$i
  echo '</select></div><div class="ds-filter-field"><label>Severidad</label><select class="form-select" name="level">';
  foreach(['all'=>'Todas','debug'=>'Debug','info'=>'Info','warn'=>'Advertencias','error'=>'Errores','fatal'=>'Críticos'] as $k=>$v)echo '<option value="'.h($k).'"'.($level===$k?' selected':'').'>'.h($v).'</option>';
  echo '</select></div><button class="btn btn-primary" type="submit">Filtrar</button></form>';
- echo '<div class="ds-actions"><a class="btn btn-outline-primary" href="'.h(url('device-diagnostics.php?tenant_id='.$company.'&device_id='.$id.'&level='.$level.'&export=json')).'">Exportar JSON</a></div>';
+ echo '<div class="ds-actions"><a class="btn btn-outline-primary" href="'.h(url('device-diagnostics.php?tenant_id='.$company.'&device_id='.$id.'&level='.$level.'&export=json')).'">Exportar historial completo (JSON)</a></div>';
  echo '<div class="card table-responsive"><table class="table"><thead><tr><th>Pantalla</th><th>Último contacto</th><th>Sincronización solicitada</th><th>Última aplicada</th><th>Acción</th></tr></thead><tbody>';
  foreach($devices as $d){
   $did=(int)$d['id'];$requested=(int)($d['requested_version']??0);$applied=(int)($d['applied_version']??0);
