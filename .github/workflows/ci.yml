@@ -2,7 +2,7 @@ name: Web portal CI
 
 on:
   push:
-    branches: [main, feat/four-modes-parity-v0419]
+    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431]
   pull_request:
     branches: [main]
   workflow_dispatch:
