@@ -1,0 +1,94 @@
+name: Build LG webOS TV IPK
+
+on:
+  pull_request:
+    branches: [feat/device-log-export-v0431]
+    paths: ['webos/**', 'public/app-downloads.php', 'public/assets/js/webos-player.js', 'public/assets/js/player-transition.js', '.github/workflows/webos-package.yml']
+  push:
+    branches: [feat/device-log-export-v0431]
+    paths: ['webos/**', '.github/workflows/webos-package.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-webos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch approved 2Cam icon from Android repository
+        uses: actions/checkout@v4
+        with:
+          repository: scammarano/digital-signage-android
+          ref: 50c065c78233aeba7e08d435415a00024e4b947f
+          path: android-branding
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate webOS metadata, HTTPS endpoint and portal integration
+        run: |
+          set -euo pipefail
+          python3 webos/scripts/smoke_contract.py
+          node --check public/assets/js/webos-player.js
+          node --check public/assets/js/player-transition.js
+          php -l public/app-downloads.php
+          php -l public/player.php
+          php -l public/webos-install.php
+      - name: Prepare approved branding and install official LG CLI
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check pillow
+          python3 webos/scripts/prepare_icon.py --source android-branding/branding/ic_2cam_signage.png.b64 --app webos/app
+          npm install -g @webos-tools/cli
+          ares-package --version
+      - name: Compile official LG webOS IPK
+        run: |
+          set -euo pipefail
+          mkdir -p webos-dist
+          ares-package --no-minify --outdir webos-dist webos/app
+          test -s webos-dist/com.twocam.signage_0.1.0_all.ipk
+          ares-package --info webos-dist/com.twocam.signage_0.1.0_all.ipk
+          ar t webos-dist/com.twocam.signage_0.1.0_all.ipk
+          (cd webos-dist && sha256sum com.twocam.signage_0.1.0_all.ipk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lg-webos-tv-ipk-v0.1.0
+          path: webos-dist/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-prerelease:
+    needs: build-webos
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/device-log-export-v0431'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lg-webos-tv-ipk-v0.1.0
+          path: webos-dist
+      - name: Publish verified Developer Mode test build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd webos-dist
+          sha256sum -c SHA256SUMS.txt
+          if gh release view webos-v0.1.0 --repo scammarano/2camdigitaltvweb >/dev/null 2>&1; then
+            echo 'webOS 0.1.0 already published; refusing to overwrite an immutable test version'
+            exit 1
+          fi
+          gh release create webos-v0.1.0 \
+            com.twocam.signage_0.1.0_all.ipk SHA256SUMS.txt \
+            --repo scammarano/2camdigitaltvweb \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title '2Cam Digital Signage LG webOS 0.1.0 (Developer Mode)' \
+            --notes 'IPK oficial de pruebas webOS TV. Aplicación hosted para 2Cam: emparejamiento 6 dígitos, listas y programación. Se instala desde PC con Developer Mode, no desde el navegador LG. Requiere sitio PHP actualizado. No incluye offline persistente, overlays nativos ni inicio automático en TV doméstico. Prueba física LG 75UR7800PSB pendiente.'
