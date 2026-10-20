@@ -99,10 +99,7 @@ jobs:
             --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" \
             --apksigner "$ANDROID_HOME/build-tools/35.0.0/apksigner" \
             --out signed-p5-release
-          sha256sum -c signed-p5-release/SHA256SUMS.txt --ignore-missing || {
-            cd signed-p5-release
-            sha256sum -c SHA256SUMS.txt
-          }
+          (cd signed-p5-release && sha256sum -c SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: verified-p5-signed-delivery
