@@ -58,7 +58,9 @@ render('Administración remota de APK',function()use($rows,$scope,$error,$ok){
   echo '<div class="ds-modal-actions"><button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit">Enviar configuración</button></div></form>';
   if(is_super()){
     $pinStatus=($d['pin_status']??null)==='applied'?'Aplicado en APK':
-        ((($d['pin_status']??null)==='pending' && !empty($d['pin_expires_at']) && strtotime((string)$d['pin_expires_at'])>time())?'Pendiente de recibir':'Sin orden activa / vencida');
+        (($d['pin_status']??null)==='error'?'Error':
+        (($d['pin_status']??null)==='pending' && !empty($d['pin_expires_at']) && strtotime((string)$d['pin_expires_at'])>time())?'Pendiente de recibir':
+        (($d['pin_status']??null)!==null?'Expirado / no aplicado':'Sin PIN asignado'));
     echo '<hr><h6>PIN administrativo de la TV</h6><p>Estado: <strong>'.h($pinStatus).'</strong> · Solicitud #'.(int)($d['pin_revision']??0).'. Solo SUPERADMIN. No se guarda en la configuración compartida, ni en las copias de seguridad.</p>';
     form_open();echo '<input type="hidden" name="action" value="set_pin"><input type="hidden" name="device_id" value="'.$id.'">';
     echo '<div class="row g-2"><div class="col-md-6"><label>Nuevo PIN (6–12 dígitos)</label><input class="form-control" name="new_pin" type="password" inputmode="numeric" pattern="[0-9]{6,12}" minlength="6" maxlength="12" autocomplete="new-password" required></div>';
