@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 30
     environment: p5-signing
     env:
-      ANDROID_SOURCE_SHA: c5b9ff67c388b4fd07f738617d03691ba72ac58d
+      ANDROID_SOURCE_SHA: 50c065c78233aeba7e08d435415a00024e4b947f
     steps:
       - uses: actions/checkout@v4
         with:
