@@ -81,7 +81,7 @@ ob_start();
       <span class="ds-apps-family">TV LG · webOS</span>
       <h2>2Cam Digital Signage para LG</h2>
       <p>Reproductor para webOS TV conectado al mismo portal, con listas, programación y emparejamiento de seis dígitos.</p>
-      <div class="ds-lg-compatible">LG webOS TV · probado inicialmente para el modelo 75UR7800PSB (webOS 25)</div>
+      <div class="ds-lg-compatible">LG webOS TV · desarrollado para el modelo 75UR7800PSB (webOS 25), pendiente de prueba física</div>
       <p class="ds-apps-revision"><strong>v0.1.0 · Versión de pruebas</strong><br>
       Aplicación LG <code>.ipk</code>, diferente de Android <code>.apk</code>.</p>
       <a class="ds-apps-download" href="<?=h(url('player.php?client=webos'))?>">Abrir reproductor web ahora</a>
