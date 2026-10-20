@@ -21,11 +21,6 @@ jobs:
     timeout-minutes: 30
     environment: p5-signing
     env:
-      P5_ANDROID_KEYSTORE_B64: ${{ secrets.P5_ANDROID_KEYSTORE_B64 }}
-      P5_RSA_PRIVATE_PEM: ${{ secrets.P5_RSA_PRIVATE_PEM }}
-      DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
-      DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
-      DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
       ANDROID_SOURCE_SHA: c5b9ff67c388b4fd07f738617d03691ba72ac58d
     steps:
       - uses: actions/checkout@v4
@@ -53,11 +48,32 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api "repos/scammarano/2camdigitaltvweb/actions/runs?head_sha=${GITHUB_SHA}&per_page=40" \
-            --jq '[.workflow_runs[] | select(.name=="Web portal CI" and .conclusion=="success")] | length' | grep -Eq '^[1-9][0-9]*$'
-          gh api "repos/scammarano/digital-signage-android/actions/runs?head_sha=${ANDROID_SOURCE_SHA}&per_page=40" \
-            --jq '[.workflow_runs[] | select(.name=="Fire Sports direct LAN APK" and .conclusion=="success")] | length' | grep -Eq '^[1-9][0-9]*$'
+          # Both repositories trigger independent CI on merge. Wait for completed,
+          # successful source results instead of racing those workflows.
+          web_ok=0
+          android_ok=0
+          for attempt in $(seq 1 60); do
+            web_ok=$(gh api "repos/scammarano/2camdigitaltvweb/actions/runs?head_sha=${GITHUB_SHA}&per_page=40" \
+              --jq '[.workflow_runs[] | select(.name=="Web portal CI" and .conclusion=="success")] | length')
+            android_ok=$(gh api "repos/scammarano/digital-signage-android/actions/runs?head_sha=${ANDROID_SOURCE_SHA}&per_page=40" \
+              --jq '[.workflow_runs[] | select(.name=="Fire Sports direct LAN APK" and .conclusion=="success")] | length')
+            if [ "$web_ok" -gt 0 ] && [ "$android_ok" -gt 0 ]; then
+              echo "Both source CI suites passed"
+              break
+            fi
+            sleep 10
+          done
+          test "$web_ok" -gt 0 && test "$android_ok" -gt 0 || {
+            echo "::error::Source CI has not passed for both pinned commits"
+            exit 1
+          }
       - name: Require P5 secrets and prepare temporary protected key files
+        env:
+          P5_ANDROID_KEYSTORE_B64: ${{ secrets.P5_ANDROID_KEYSTORE_B64 }}
+          P5_RSA_PRIVATE_PEM: ${{ secrets.P5_RSA_PRIVATE_PEM }}
+          DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
+          DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
+          DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -73,6 +89,10 @@ jobs:
           echo "DS_P5_KEYSTORE_PATH=$RUNNER_TEMP/p5-android.jks" >> "$GITHUB_ENV"
       - name: Compile permanently P5-signed Android release
         working-directory: android
+        env:
+          DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
+          DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
+          DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           python3 scripts/create_icon.py
