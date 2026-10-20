@@ -12,7 +12,7 @@ header('Cache-Control: public, max-age=300');
 </head><body><main class="guide">
 <p><a href="<?=h(url('app-downloads.php?app=lg-webos&standalone=1'))?>">← Volver a descargas</a></p>
 <h1>2Cam Digital Signage · LG webOS TV</h1>
-<p><strong>Para LG 75UR7800PSB con webOS 25</strong>. Sin Fire Stick; la aplicación LG usa un paquete .ipk, no una APK Android.</p>
+<p><strong>Para LG 75UR7800PSB con webOS 25</strong>. La aplicación LG usa un paquete .ipk, no una APK Android. Funciona sin Fire Stick para reproducir contenido dentro de 2Cam, pero no ofrece Overlay encima de otras aplicaciones de LG.</p>
 <div class="panel"><h2>Opción inmediata: navegador LG</h2>
 <p>Si todavía no tienes una computadora disponible, puedes abrir el reproductor del portal desde el navegador del LG. Necesita conexión a internet y código de vinculación del portal.</p>
 <p><a class="primary" href="<?=h(url('player.php?client=webos'))?>">Abrir reproductor web</a></p></div>
@@ -29,5 +29,5 @@ ares-launch --device lg-tv com.twocam.signage</pre></li>
 <li>Desde el portal de 2Cam, registra la pantalla LG, asigna una lista adecuada y genera un código temporal de seis dígitos. Introdúcelo en el reproductor y comienza a mostrar contenido.</li>
 </ol>
 <p><small>Consulta oficial: <a href="https://webostv.developer.lge.com/develop/getting-started/developer-mode-app">LG Developer Mode</a> y <a href="https://webostv.developer.lge.com/develop/tools/cli-dev-guide">LG webOS CLI</a>.</small></p></div>
-<div class="attention"><strong>Condiciones de esta versión de pruebas:</strong> Developer Mode requiere renovar su sesión periódicamente; no equivale a instalación desde LG Store. En webOS doméstico no garantizamos inicio automático al encender, overlay sobre otras aplicaciones ni reproducción sin internet.</div>
+<div class="attention"><strong>Limitación confirmada de LG webOS TV:</strong> no se permite que una app de terceros muestre un Overlay encima de Netflix, YouTube, TV en vivo o HDMI. Al cambiar de aplicación, 2Cam queda oculta/suspendida. Las franjas que muestre 2Cam dentro de su reproductor no son un Overlay global. Developer Mode requiere renovar la sesión; no equivale a LG Store. Esta versión tampoco ofrece inicio automático ni reproducción offline persistente. <a href="https://webostv.developer.lge.com/develop/getting-started/app-lifecycle">Documentación oficial de LG</a>.</div>
 </main></body></html>
