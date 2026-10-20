@@ -16,7 +16,8 @@ function ds_pin_issue(int $tenant,int $device,string $pin,int $user):int {
     try {
         $s=$db->prepare('SELECT device_token_hash FROM devices WHERE id=? AND tenant_id=? FOR UPDATE');$s->execute([$device,$tenant]);
         $bound=$s->fetchColumn();
-        if(!is_string($bound)||!preg_match('/^[a-f0-9]{64}$/D',$bound))throw new RuntimeException('Empareja primero la pantalla para enviar el PIN');
+        // Staged before pairing: deliver only after the six-digit physical proof.
+        if(!is_string($bound)||!preg_match('/^[a-f0-9]{64}$/D',$bound))$bound=str_repeat('0',64);
         $s=$db->prepare('SELECT revision,requested_at FROM device_pin_commands WHERE tenant_id=? AND device_id=? FOR UPDATE');$s->execute([$tenant,$device]);$prior=$s->fetch(PDO::FETCH_ASSOC);
         if($prior && strtotime((string)$prior['requested_at'])>time()-20)throw new RuntimeException('Espera 20 segundos antes de solicitar otro cambio de PIN');
         $revision=(int)($prior['revision']??0)+1;
@@ -47,4 +48,11 @@ function ds_pin_ack(int $tenant,int $device,string $tokenHash,int $revision):boo
     }
     // An ACK retry after a lost response is idempotent.
     return (bool)dbone("SELECT 1 FROM device_pin_commands WHERE tenant_id=? AND device_id=? AND token_binding=? AND revision=? AND status='applied'",[$tenant,$device,$tokenHash,$revision]);
+}
+
+/** Only the physical-code pairing transaction is allowed to rebind a pending PIN. */
+function ds_pin_bind_on_pair(int $tenant,int $device,string $newTokenHash):void {
+    if(!preg_match('/^[a-f0-9]{64}$/D',$newTokenHash))throw new RuntimeException('Token de emparejamiento inválido');
+    $s=db()->prepare("UPDATE device_pin_commands SET token_binding=? WHERE tenant_id=? AND device_id=? AND status='pending' AND expires_at>UTC_TIMESTAMP()");
+    $s->execute([$newTokenHash,$tenant,$device]);
 }

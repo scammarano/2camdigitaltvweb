@@ -5,7 +5,7 @@ require_once ROOT.'/app/domain.php';
 require_once ROOT.'/app/playback.php';
 require_once ROOT.'/app/mode_runtime.php';
 require_once ROOT.'/app/device_config.php';require_once ROOT.'/app/media_formats.php';
-require_once ROOT.'/app/device_service.php';
+require_once ROOT.'/app/device_service.php';require_once ROOT.'/app/device_pin.php';
 header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
 function api_out(array $data,int $code=200):never {http_response_code($code);echo json_encode($data,JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);exit;}
 function req_payload():array {$raw=file_get_contents('php://input');if(strlen($raw)>16384)api_out(['error'=>'Solicitud demasiado grande'],413);$p=json_decode($raw?:'{}',true);return is_array($p)?$p:[];}
@@ -36,8 +36,14 @@ try {
     $d=dbone('SELECT id,tenant_id FROM devices WHERE pairing_code_hash=? AND pairing_expires>UTC_TIMESTAMP()',[$hash]);
     if(!$d)api_out(['error'=>'Código expirado o no válido'],401);
     $token=bin2hex(random_bytes(32));
-    $count=execsql('UPDATE devices SET pairing_code_hash=NULL,pairing_expires=NULL,device_token_hash=?,last_seen=UTC_TIMESTAMP() WHERE id=? AND tenant_id=? AND pairing_code_hash=?',[hash('sha256',$token),(int)$d['id'],(int)$d['tenant_id'],$hash]);
-    if($count!==1)api_out(['error'=>'Código utilizado por otra pantalla'],409);
+    // Token rotation and pending PIN binding occur atomically after code validation.
+    $pdo=db();$pdo->beginTransaction();
+    try {
+      $count=execsql('UPDATE devices SET pairing_code_hash=NULL,pairing_expires=NULL,device_token_hash=?,last_seen=UTC_TIMESTAMP() WHERE id=? AND tenant_id=? AND pairing_code_hash=?',[hash('sha256',$token),(int)$d['id'],(int)$d['tenant_id'],$hash]);
+      if($count!==1){$pdo->rollBack();api_out(['error'=>'Código utilizado por otra pantalla'],409);}
+      ds_pin_bind_on_pair((int)$d['tenant_id'],(int)$d['id'],hash('sha256',$token));
+      $pdo->commit();
+    }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     log_event('device_paired',['device_id'=>(int)$d['id'],'tenant_id'=>(int)$d['tenant_id']]);
     api_out(['token'=>$token,'device_id'=>(int)$d['id']]);
   }

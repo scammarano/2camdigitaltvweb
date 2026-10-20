@@ -27,6 +27,18 @@ pin31_check($rev2===2,'Revision not monotonic');
 db()->prepare("UPDATE device_pin_commands SET expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE device_id=?")->execute([$id]);
 pin31_check(ds_pin_pending(2,$id,$token)['pending']===false,'Expired PIN delivered');
 pin31_check(!ds_pin_ack(2,$id,$token,$rev2),'Expired PIN accepted');
+// Stage a new PIN before pairing and prove the old device token cannot read it.
+db()->prepare("UPDATE devices SET device_token_hash=NULL WHERE id=?")->execute([$id]);
+db()->prepare("UPDATE device_pin_commands SET requested_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 30 SECOND) WHERE device_id=?")->execute([$id]);
+$rev3=ds_pin_issue(2,$id,'87492163',100);
+pin31_check($rev3===3,'Unpaired revision not monotonic');
+pin31_check(ds_pin_pending(2,$id,$token)['pending']===false,'Old token saw staged PIN');
+$newToken=hash('sha256','new-pairing-token-'.bin2hex(random_bytes(12)));
+db()->prepare('UPDATE devices SET device_token_hash=? WHERE id=?')->execute([$newToken,$id]);
+ds_pin_bind_on_pair(2,$id,$newToken);
+pin31_check(ds_pin_pending(2,$id,$newToken)['pin']==='87492163','PIN not delivered after pairing');
+pin31_check(ds_pin_pending(2,$id,$token)['pending']===false,'Prior pairing token read PIN');
+pin31_check(ds_pin_ack(2,$id,$newToken,$rev3),'Newly paired device did not ACK PIN');
 db()->prepare('DELETE FROM device_pin_commands WHERE device_id=?')->execute([$id]);
 db()->prepare('DELETE FROM devices WHERE id=?')->execute([$id]);
 echo "DEVICE_PIN31_PASS tenant binding encryption ACK expiry and no replay\n";

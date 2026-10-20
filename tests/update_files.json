@@ -94,5 +94,6 @@
   "public/api-device-pin.php",
   "database/migrations/0.4.32.php",
   "app/trust/legacy-apk-rsa-public.txt",
-  "database/migrations/0.4.33.php"
+  "database/migrations/0.4.33.php",
+  "database/migrations/0.4.34.php"
 ]
