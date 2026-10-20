@@ -45,9 +45,10 @@
     }
     // The numeric remote can enter pairing digits directly while setup is open.
     if (!setup.hidden && e.key && /^[0-9]$/.test(e.key) &&
-        document.activeElement !== code && document.activeElement !== document.getElementById('pair')) {
+        document.activeElement !== code) {
       if (code.value.length >= 6) code.value = '';
       code.value += e.key;
+      code.focus();
       e.preventDefault();
     }
     if (!setup.hidden && e.key === 'Enter' && document.activeElement === code) {
@@ -61,5 +62,5 @@
   window.addEventListener('webOSRelaunch', function () {
     if (!stage.hidden) hideMenu();
   });
-  if (!stage.hidden) stage.focus(); else document.getElementById('pair').focus();
+  if (!stage.hidden) stage.focus(); else code.focus();
 }());
