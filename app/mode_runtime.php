@@ -10,6 +10,7 @@ function mode_block_active(array $block,DateTimeImmutable $now):bool {
   return playback_schedule_matches($block,$now);
 }
 function resolve_mode(array $device,array $blocks,DateTimeImmutable $now,int $enabledMask=15):int {
+  $enabledMask|=3; // Historical bit masks cannot disable core modes.
   foreach($blocks as $block)if(mode_block_active($block,$now)) {
     $mode=(int)$block['mode'];if($mode>=1&&$mode<=4 && ($enabledMask&(1<<($mode-1))))return $mode;
   }
@@ -19,7 +20,7 @@ function runtime_opts(int $tenantId,int $deviceId):array {
   $r=dbone('SELECT overlay_interval_sec,overlay_duration_sec,modes_enabled FROM device_runtime_options WHERE tenant_id=? AND device_id=?',[$tenantId,$deviceId]);
   return ['overlay_interval_sec'=>max(60,min(86400,(int)($r['overlay_interval_sec']??900))),
           'overlay_duration_sec'=>max(3,min(120,(int)($r['overlay_duration_sec']??12))),
-          'modes_enabled'=>((int)($r['modes_enabled']??15))&15];
+          'modes_enabled'=>(((int)($r['modes_enabled']??15))&15)|3];
 }
 function live_panel(int $tenantId,int $deviceId):array {
   $r=dbone('SELECT widget_type,payload_json,updated_at FROM device_live_panels WHERE tenant_id=? AND device_id=?',[$tenantId,$deviceId]);
