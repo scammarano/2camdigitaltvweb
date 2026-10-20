@@ -69,11 +69,11 @@ jobs:
           }
       - name: Require P5 secrets and prepare temporary protected key files
         env:
-          P5_ANDROID_KEYSTORE_B64: ${{ secrets.P5_ANDROID_KEYSTORE_B64 }}
+          P5_ANDROID_KEYSTORE_B64: ${{ secrets.P5_ANDROID_KEYSTORE_B64 || secrets.SIGNAGE_DEBUG_KEYSTORE_B64 }}
           P5_RSA_PRIVATE_PEM: ${{ secrets.P5_RSA_PRIVATE_PEM }}
-          DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
-          DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
-          DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
+          DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD || secrets.SIGNAGE_STORE_PASSWORD }}
+          DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS || secrets.SIGNAGE_KEY_ALIAS }}
+          DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD || secrets.SIGNAGE_KEY_PASSWORD || secrets.SIGNAGE_STORE_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -90,9 +90,9 @@ jobs:
       - name: Compile permanently P5-signed Android release
         working-directory: android
         env:
-          DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
-          DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
-          DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
+          DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD || secrets.SIGNAGE_STORE_PASSWORD }}
+          DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS || secrets.SIGNAGE_KEY_ALIAS }}
+          DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD || secrets.SIGNAGE_KEY_PASSWORD || secrets.SIGNAGE_STORE_PASSWORD }}
         run: |
           set -euo pipefail
           python3 scripts/create_icon.py
