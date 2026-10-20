@@ -2,9 +2,9 @@ name: Web portal CI
 
 on:
   push:
-    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431]
+    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431, fix/p6-pin-overlay-boot-20261019]
   pull_request:
-    branches: [main]
+    branches: [main, feat/device-log-export-v0431]
   workflow_dispatch:
 
 permissions:
