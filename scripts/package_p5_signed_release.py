@@ -40,14 +40,14 @@ def zip_write(archive: zipfile.ZipFile, name: str, content: bytes) -> None:
 def apk_metadata(path: Path, aapt: str, apksigner: str) -> dict:
     proof = invoke([apksigner, "verify", "--verbose", "--print-certs",
                     "--min-sdk-version", "19", str(path)]).decode()
-    certs = re.findall(r"Signer #\\d+ certificate SHA-256 digest: ([a-fA-F0-9]{64})", proof)
+    certs = re.findall(r"Signer #\d+ certificate SHA-256 digest: ([a-fA-F0-9]{64})", proof)
     if len(certs) != 1 or certs[0].lower() != P5_CERT:
         raise ValueError("APK signing certificate differs from permanent P5; refusing delivery")
     if "Verified using v1 scheme (JAR signing): true" not in proof:
         raise ValueError("Missing Android 4.4/Fire OS 5 v1 signature")
     badging = invoke([aapt, "dump", "badging", str(path)]).decode()
-    match = re.search(r"package: name='([^']+)' versionCode='(\\d+)' versionName='([^']+)'", badging)
-    sdk = re.search(r"sdkVersion:'(\\d+)'", badging)
+    match = re.search(r"package: name='([^']+)' versionCode='(\d+)' versionName='([^']+)'", badging)
+    sdk = re.search(r"sdkVersion:'(\d+)'", badging)
     if not match or not sdk or match[1] != APK_PACKAGE or int(sdk[1]) != 19:
         raise ValueError("Unexpected APK identity or minimum SDK")
     return {"package": match[1], "version_code": int(match[2]),
@@ -96,7 +96,7 @@ def main() -> None:
         raise ValueError("Missing P6 files or cumulative migration")
     digests: dict[str, str] = {}
     for name in paths:
-        if not re.fullmatch(r"(?:app|public|database)/[A-Za-z0-9_./-]+|version\\.txt", name):
+        if not re.fullmatch(r"(?:app|public|database)/[A-Za-z0-9_./-]+|version\.txt", name):
             raise ValueError("Forbidden web payload path")
         if ".." in name or "//" in name:
             raise ValueError("Unsafe payload path")
