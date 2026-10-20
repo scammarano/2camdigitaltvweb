@@ -108,7 +108,7 @@ def main() -> None:
                 "min_version": "0.4.16", "source_commit": web_source,
                 "signature_algorithm": "RSA-SHA256", "files": digests,
                 "migrations": ["database/migrations/0.4.34.php"]}
-    web_raw = (json.dumps(manifest, ensure_ascii=False, separators=(",", ":")) + "\\n").encode()
+    web_raw = (json.dumps(manifest, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
     web_sig = invoke(["openssl", "dgst", "-sha256", "-sign", str(args.rsa_key)], input_data=web_raw)
     apk_bytes = args.android_apk.read_bytes()
     apk_manifest = {"schema": 1, "product": "2cam-apk", "platform": "android-tv",
@@ -118,15 +118,8 @@ def main() -> None:
                     "sha256": sha(apk_bytes), "source_repository": "scammarano/digital-signage-android",
                     "source_commit": args.android_source,
                     "notes": "P6: PIN previo al emparejamiento, arranque automatico y Overlay; misma firma P5."}
-    apk_raw = (json.dumps(apk_manifest, ensure_ascii=False, separators=(",", ":")) + "\\n").encode()
+    apk_raw = (json.dumps(apk_manifest, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
     apk_sig = invoke(["openssl", "dgst", "-sha256", "-sign", str(args.rsa_key)], input_data=apk_raw)
-    for raw, sig in [(web_raw, web_sig), (apk_raw, apk_sig)]:
-        with subprocess.Popen(["openssl", "dgst", "-sha256", "-verify", str(args.public_key),
-                               "-signature", "/dev/stdin"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE) as proc:
-            # Signatures are already verified below with temporary files.
-            proc.communicate(sig)
-        # Do not infer success from the previous subprocess (manifest bytes required).
     dest = args.out.resolve()
     dest.mkdir(parents=True, exist_ok=True)
     web_zip = dest / "SIGNAGE_UPDATE_v0.4.34_P6_PIN_OVERLAY_BOOT_RSA.zip"
@@ -136,25 +129,25 @@ def main() -> None:
         raise FileExistsError("Refusing to overwrite an existing signed delivery")
     with zipfile.ZipFile(web_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
         zip_write(archive, "manifest.json", web_raw)
-        zip_write(archive, "manifest.sig", base64.b64encode(web_sig) + b"\\n")
+        zip_write(archive, "manifest.sig", base64.b64encode(web_sig) + b"\n")
         for name in paths:
             zip_write(archive, "payload/" + name, (root / name).read_bytes())
     with zipfile.ZipFile(envelope, "w", compression=zipfile.ZIP_STORED) as archive:
         zip_write(archive, "manifest.json", apk_raw)
-        zip_write(archive, "manifest.sig", base64.b64encode(apk_sig) + b"\\n")
+        zip_write(archive, "manifest.sig", base64.b64encode(apk_sig) + b"\n")
         zip_write(archive, "app.apk", apk_bytes)
     apk_final.write_bytes(apk_bytes)
     for path in (web_zip, envelope):
         with zipfile.ZipFile(path) as archive:
             assert archive.testzip() is None
     (dest / "SHA256SUMS.txt").write_text("".join(
-        sha(file.read_bytes()) + "  " + file.name + "\\n"
+        sha(file.read_bytes()) + "  " + file.name + "\n"
         for file in (web_zip, apk_final, envelope)))
     (dest / "release-notes.md").write_text(
-        "Web 0.4.34 y Android 0.4.23-debug — P6. Certificado Android y RSA de P5 reutilizados.\\n"
-        "PIN desde portal previo al emparejamiento, BOOT sin cache y Overlay como modo base.\\n"
-        "Importar la release en canal Pruebas; promover a Estable solo tras las pruebas.\\n"
-        "La publicación en GitHub no instala la web en el hosting ni obliga a Android a aceptar instalaciones silenciosas.\\n")
+        "Web 0.4.34 y Android 0.4.23-debug — P6. Certificado Android y RSA de P5 reutilizados.\n"
+        "PIN desde portal previo al emparejamiento, BOOT sin cache y Overlay como modo base.\n"
+        "Importar la release en canal Pruebas; promover a Estable solo tras las pruebas.\n"
+        "La publicación en GitHub no instala la web en el hosting ni obliga a Android a aceptar instalaciones silenciosas.\n")
     print(json.dumps({"web_source": web_source, "android_source": args.android_source,
                       "certificate_sha256": P5_CERT, "rsa_public_der_sha256": sha(actual_der),
                       "assets": {p.name: sha(p.read_bytes()) for p in (web_zip, apk_final, envelope)}},
