@@ -19,7 +19,7 @@ function runtime_opts(int $tenantId,int $deviceId):array {
   $r=dbone('SELECT overlay_interval_sec,overlay_duration_sec,modes_enabled FROM device_runtime_options WHERE tenant_id=? AND device_id=?',[$tenantId,$deviceId]);
   return ['overlay_interval_sec'=>max(60,min(86400,(int)($r['overlay_interval_sec']??900))),
           'overlay_duration_sec'=>max(3,min(120,(int)($r['overlay_duration_sec']??12))),
-          'modes_enabled'=>((int)($r['modes_enabled']??15))&15];
+          'modes_enabled'=>15]; // Deprecated flags cannot silently suppress a selected mode.
 }
 function live_panel(int $tenantId,int $deviceId):array {
   $r=dbone('SELECT widget_type,payload_json,updated_at FROM device_live_panels WHERE tenant_id=? AND device_id=?',[$tenantId,$deviceId]);

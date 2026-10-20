@@ -17,7 +17,10 @@ function ds_config_migrate_v1(array $input):array {
 function ds_config_validate(array $input):array {
  $input=ds_config_migrate_v1($input);$defaults=ds_config_defaults();
  foreach($input as $key=>$val)if(!array_key_exists($key,$defaults))throw new RuntimeException('Parámetro desconocido: '.$key);
- $full=array_merge($defaults,$input);$out=[];
+ $full=array_merge($defaults,$input);
+ // Historic enabled_modes checkboxes are no longer a product entitlement.
+ // Actual activation requires compatible content; Turnos/Sports are Overlay submodes.
+ $full['enabled_modes']=15;$out=[];
  foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];$v=$full[$k];
   if($f['type']==='bool'){
    if(!is_bool($v))throw new RuntimeException('Tipo booleano requerido: '.$k);$out[$k]=$v;
@@ -34,7 +37,7 @@ function ds_config_validate(array $input):array {
 function ds_config_form_input(array $post):array {
  $out=[];foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];
   if($f['type']==='bool')$out[$k]=isset($post[$k]);
-  elseif($f['type']==='mask'){$n=0;foreach([1,2,4,8] as $bit)if(isset($post['mode_'.$bit]))$n|=$bit;$out[$k]=$n;}
+  elseif($f['type']==='mask')$out[$k]=15;
   elseif($f['type']==='enum'&&!is_int($f['default']))$out[$k]=(string)($post[$k]??'');
   else { $raw=$post[$k]??'';if(!is_string($raw)||!preg_match('/^[0-9]{1,10}$/D',$raw))throw new RuntimeException('Número inválido: '.$f['label']);$out[$k]=(int)$raw;}
  }return ds_config_validate($out);
@@ -54,7 +57,7 @@ function ds_config_form(array $c,int $tid,int $did):void {
     continue;
   }
   if($f['type']==='bool'){echo '<label class="d-block mb-2"><input type="checkbox" name="'.h($k).'"'.($c[$k]?' checked':'').'> '.h($f['label']).'</label>';continue;}
-  if($f['type']==='mask'){echo '<details class="mb-3"><summary><strong>Avanzado: modos permitidos</strong> (no selecciona el modo actual)</summary><p class="small text-muted">Estos permisos limitan qué modos puede ejecutar la pantalla. El modo activo lo determina la programación del portal o la selección local.</p>';foreach(ds_config_schema()['modes'] as $id=>$label){$bit=1<<((int)$id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> '.h($label).'</label>';}echo '</details>';continue;}
+  if($f['type']==='mask'){echo '<p class="small text-muted">Cartelera y Overlay están disponibles según sus listas. Turnos y Marcador utilizan la publicidad de Overlay; no requieren permisos de modo separados.</p>';continue;}
   echo '<label class="form-label">'.h($k==='primary_mode'?'Modo de respaldo del portal (fuera de programación)':$f['label']).'</label>';
   if($f['type']==='playlist'){
    $modeBit=str_starts_with($k,'overlay_')?2:(str_starts_with($k,'queue_')?4:(str_starts_with($k,'scoreboard_')?8:1));
@@ -99,7 +102,7 @@ function ds_mode_playlist(array $c,int $mode):int {
 }
 function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
  require_once __DIR__.'/domain.php';
- if($mode<1||$mode>4||!($c['enabled_modes']&(1<<($mode-1))))throw new RuntimeException('El modo no está habilitado');
+ if($mode<1||$mode>4)throw new RuntimeException('Modo inválido');
  $layout=ds_mode_layout($c,$mode);$id=ds_mode_playlist($c,$mode);$ids=$id>0?[$id]:[];
  if(!$ids&&$mode===1){
   $device=dbone('SELECT active_playlist_id FROM devices WHERE id=? AND tenant_id=?',[$did,$tid]);
