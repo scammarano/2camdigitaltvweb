@@ -17,8 +17,14 @@ para prueba con el televisor LG 75UR7800PSB / webOS 25. No es una APK.
   streaming de imágenes/vídeos, estado suspendido y heartbeat del portal.
 - Requiere conexión a internet para iniciar y solicitar medios. La caché
   de blobs de la sesión es de memoria; **offline persistente NO implementado**.
-- Superposición sobre otras apps, inicio automático al encender LG doméstico,
-  instalación silenciosa y control nativo Turnos/Sports no forman parte de v0.1.0.
+- **Limitación permanente de plataforma webOS TV doméstico**: no existe API pública
+  para superponer 2Cam encima de Netflix, YouTube, Live TV, HDMI o apps del sistema.
+  Al abrir otra app, la nuestra pasa a segundo plano (oculta/suspendida).
+  Las franjas y formatos dentro del reproductor de 2Cam NO son un Overlay global.
+  Publicar en LG Apps no habilita esas ventanas. Fuente oficial:
+  https://webostv.developer.lge.com/develop/getting-started/app-lifecycle
+- Inicio automático al encender LG doméstico, instalación silenciosa y control
+  nativo Turnos/Sports no forman parte de v0.1.0.
 
 ## Empaquetado oficial
 
