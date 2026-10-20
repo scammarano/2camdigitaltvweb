@@ -26,3 +26,12 @@
 .ds-apps-channels{margin-top:-4px}
 .ds-apps-filter a:focus-visible,.ds-apps-download:focus-visible,.ds-apps-release a:focus-visible{outline:3px solid #f4ac2b;outline-offset:2px}
 @media(max-width:650px){.ds-apps-release{flex-wrap:wrap}.ds-apps-grid-single{grid-template-columns:minmax(0,1fr)}}
+
+/* LG webOS TV family alongside existing Android-only APK catalogue. */
+.ds-apps-lg{border-color:#9cc6f0;background:linear-gradient(180deg,#f4f9ff 0%,#fff 62%)}
+.ds-apps-lg .ds-apps-family{background:#d9edf9;color:#123f70}
+.ds-lg-compatible{display:inline-block;border:1px solid #c8e2f2;background:#edf8fd;color:#155276;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:750}
+.ds-apps-download-secondary{background:#fff;color:#174589!important;border:2px solid #174589}
+.ds-apps-download-secondary:hover{background:#eaf4ff}
+.ds-apps-lg .ds-apps-revision{margin-top:18px}
+.ds-apps-lg .ds-apps-tv-help{margin-top:auto}

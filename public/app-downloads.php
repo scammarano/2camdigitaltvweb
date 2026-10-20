@@ -9,9 +9,10 @@ $platforms=ds_apk_platforms();
 $channel=(string)($_GET['channel']??'all');
 if($channel!=='all' && !isset($channels[$channel]))$channel='all';
 $tvView=basename((string)($_SERVER['SCRIPT_NAME']??''))==='tv.php';
-$app=(string)($_GET['app']??'all');
-if($app!=='all' && !array_key_exists($app,$platforms))$app='all';
-if($tvView)$app='android-tv';
+$isLGWebOS=preg_match('/web0s|webos/i',(string)($_SERVER['HTTP_USER_AGENT']??''))===1;
+$app=(string)($_GET['app']??($isLGWebOS?'lg-webos':'all'));
+if($app!=='all' && $app!=='lg-webos' && !array_key_exists($app,$platforms))$app='all';
+if($tvView)$app=$isLGWebOS?'lg-webos':'android-tv';
 
 // Explicit public mode (e.g. tv.php) never requires a login or exposes tenant data.
 $session=false;
@@ -45,14 +46,17 @@ $descriptions=[
  'turnos-control'=>['Android móvil / tablet','Control de atención, emisión y llamados de turnos; integración con las pantallas.'],
  'sports-control'=>['Android móvil / tablet','Control de encuentros, pistas, marcador y puntuación deportiva.'],
 ];
-$showPlatforms=$app==='all'?$platforms:[$app=>$platforms[$app]];
+$showPlatforms=$app==='all'?$platforms:($app==='lg-webos'?[]:[$app=>$platforms[$app]]);
+$showLGWebOS=$app==='all'||$app==='lg-webos';
+$webosReleaseUrl='https://github.com/scammarano/2camdigitaltvweb/releases/tag/webos-v0.1.0';
+$webosIpkUrl='https://github.com/scammarano/2camdigitaltvweb/releases/download/webos-v0.1.0/com.twocam.signage_0.1.0_all.ipk';
 ob_start();
 ?>
 <div class="ds-apk-hub">
   <header class="ds-apps-intro">
     <div class="ds-apps-kicker">2CAM SERVICES · DISTRIBUCIÓN OFICIAL</div>
-    <h1><?= $tvView?'2Cam Digital Signage para Fire TV':'Descargar aplicaciones' ?></h1>
-    <p><?= $tvView?'Selecciona una versión publicada y descarga la APK para tu televisor.':'Un único catálogo para 2Cam Digital Signage, 2Cam Turnos y 2Cam Sports. Descarga únicamente las versiones publicadas.' ?></p>
+    <h1><?= $tvView?($isLGWebOS?'2Cam Digital Signage para LG webOS':'2Cam Digital Signage para Fire TV'):'Descargar aplicaciones' ?></h1>
+    <p><?= $tvView?($isLGWebOS?'Reproduce campañas directamente en tu LG, sin Android ni Fire Stick.':'Selecciona una versión publicada y descarga la APK para tu televisor.'):'Descargas para LG webOS, Android/Fire TV, Turnos y Sports.' ?></p>
   </header>
   <?php if(!$tvView): ?>
   <nav class="ds-apps-filter" aria-label="Filtrar por aplicación">
@@ -60,17 +64,35 @@ ob_start();
     <?php foreach($platforms as $slug=>$name): ?>
       <a class="<?= $app===$slug?'active':'' ?>" href="<?=h($catalogUrl(['app'=>$slug]))?>"><?=h($name)?></a>
     <?php endforeach; ?>
+    <a class="<?= $app==='lg-webos'?'active':'' ?>" href="<?=h($catalogUrl(['app'=>'lg-webos']))?>">LG webOS TV</a>
   </nav>
   <?php endif; ?>
-  <nav class="ds-apps-filter ds-apps-channels" aria-label="Filtrar por canal de publicación">
+  <?php if($app!=='lg-webos'): ?><nav class="ds-apps-filter ds-apps-channels" aria-label="Filtrar por canal de publicación">
     <?php foreach(['all'=>'Todos los canales','stable'=>'Estable','beta'=>'Beta','debug'=>'Pruebas'] as $key=>$label): ?>
       <a class="<?= $channel===$key?'active':'' ?>" href="<?=h($catalogUrl(['channel'=>$key]))?>"><?=h($label)?></a>
     <?php endforeach; ?>
-  </nav>
-  <?php if($unavailable): ?>
+  </nav><?php endif; ?>
+  <?php if($unavailable && $app!=='lg-webos'): ?>
     <p class="ds-apk-hub-error" role="alert">No se pudo consultar el catálogo. Intenta de nuevo en unos minutos.</p>
   <?php endif; ?>
-  <div class="ds-apps-grid<?=count($showPlatforms)===1?' ds-apps-grid-single':''?>">
+  <div class="ds-apps-grid<?=count($showPlatforms)+($showLGWebOS?1:0)===1?' ds-apps-grid-single':''?>">
+    <?php if($showLGWebOS): ?>
+    <article class="ds-apps-card ds-apps-lg" data-platform="lg-webos">
+      <span class="ds-apps-family">TV LG · webOS</span>
+      <h2>2Cam Digital Signage para LG</h2>
+      <p>Reproductor para webOS TV conectado al mismo portal, con listas, programación y emparejamiento de seis dígitos.</p>
+      <div class="ds-lg-compatible">LG webOS TV · desarrollado para el modelo 75UR7800PSB (webOS 25), pendiente de prueba física</div>
+      <p class="ds-apps-revision"><strong>v0.1.0 · Versión de pruebas</strong><br>
+      Aplicación LG <code>.ipk</code>, diferente de Android <code>.apk</code>.</p>
+      <a class="ds-apps-download" href="<?=h(url('player.php?client=webos'))?>">Abrir reproductor web ahora</a>
+      <a class="ds-apps-download ds-apps-download-secondary" href="<?=h($webosIpkUrl)?>">Descargar aplicación LG (.ipk) para PC</a>
+      <p class="ds-apps-technical">La instalación .ipk se realiza desde una computadora mediante Developer Mode; no se instala pulsando el archivo en el navegador del LG.</p>
+      <p class="ds-apps-technical"><a href="<?=h(url('webos-install.php'))?>">Guía paso a paso para instalar en LG</a>
+      · <a href="<?=h($webosReleaseUrl)?>">Consultar publicación en GitHub</a></p>
+      <div class="ds-apps-tv-help"><strong>Sin Fire Stick ni caja Android</strong>
+      <p>Para una prueba inmediata abre el reproductor web. Esta primera versión no ofrece inicio automático al encender, overlay sobre otras aplicaciones ni caché offline persistente.</p></div>
+    </article>
+    <?php endif; ?>
     <?php foreach($showPlatforms as $slug=>$name):
         $meta=$descriptions[$slug];$history=$releases[$slug]??[];$latest=$history[0]??null;
     ?>
@@ -122,11 +144,11 @@ ob_start();
       </article>
     <?php endforeach; ?>
   </div>
-  <p class="ds-apps-bottom">Los archivos APK son para Android. iPhone, iPad y Apple Watch requieren aplicaciones o interfaces compatibles con sus sistemas cuando estén disponibles.</p>
+  <p class="ds-apps-bottom">LG webOS utiliza aplicaciones .ipk; Android y Fire TV utilizan .apk. Los .ipk se instalan desde una computadora, no directamente desde el navegador del televisor.</p>
 </div>
 <?php
 $content=(string)ob_get_clean();
-$style='<link rel="stylesheet" href="'.h(url('assets/css/app-downloads.css')).'?v=0417">';
+$style='<link rel="stylesheet" href="'.h(url('assets/css/app-downloads.css')).'?v=webos010">';
 if(!$standalone){
     require_once ROOT.'/app/layout.php';
     render('Descargar aplicaciones',static function()use($content,$style):void{echo $style.$content;});

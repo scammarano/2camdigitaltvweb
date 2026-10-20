@@ -4,6 +4,17 @@
  const setup=document.getElementById('setup'),stage=document.getElementById('stage'),area=document.getElementById('displayArea'),display=document.getElementById('display'),status=document.getElementById('status'),state=document.getElementById('playerState');
  const deck=new DSSlides.SlideDeck(area);
  let token='',items=[],index=0,timer=null,refreshing=false,displaySerial=0,sessionGen=0,orientation='landscape',source='';
+ const isWebOS=/web0s|webos/i.test(navigator.userAgent) || new URLSearchParams(location.search).get('client')==='webos';
+ const webOSStorageKey='2cam-signage-webos-pairing-v1';
+ function rememberToken(value){
+   if(!isWebOS)return;
+   try{if(value)localStorage.setItem(webOSStorageKey,value);else localStorage.removeItem(webOSStorageKey);}catch(e){}
+ }
+ function savedToken(){
+   if(!isWebOS)return '';
+   try{return localStorage.getItem(webOSStorageKey)||'';}catch(e){return '';}
+ }
+ let activeMode=0;
  let serviceSuspended=false;
  function serviceApply(state){serviceSuspended=!!state?.suspended;if(serviceSuspended){stopClock();++displaySerial;deck.clear();stateLabel();}}
  function stateLabel(){state.textContent='Servicio suspendido · Contacta al administrador';}
@@ -63,20 +74,35 @@
  async function refresh(){if(refreshing||!token)return;refreshing=true;try{
    const manifest=await api('manifest');serviceApply(manifest.service);if(serviceSuspended)return;window.DSApplyMediaFormats(manifest.media_formats||{bottom_height_pct:20,side_width_pct:40});const playback=manifest.playback||{source:'none',items:[]};items=playback.items||[];index=0;
    source=playback.source==='schedule'?'Programación horaria':playback.source==='default'?'Lista predeterminada':'Sin lista asignada';
-   orientation=manifest.orientation||'landscape';state.textContent=(manifest.device_name||'Pantalla')+' · '+source+' · '+items.length+' medios';
+   orientation=manifest.orientation||'landscape';activeMode=Number(manifest.active_mode||0);state.textContent=(manifest.device_name||'Pantalla')+' · '+source+' · '+items.length+' medios';
    await show();
   }catch(e){state.textContent='Error al sincronizar: '+e.message;timer=setTimeout(refresh,15000);}finally{refreshing=false;}}
  document.getElementById('pair').addEventListener('click',async()=>{
    const code=document.getElementById('code').value.trim();if(!/^[0-9]{6}$/.test(code)){status.textContent='Introduce un código de 6 dígitos.';return;}
    const btn=document.getElementById('pair');btn.disabled=true;
-   try{status.textContent='Emparejando…';const d=await api('pair','POST',{code});token=d.token;++sessionGen;clearCache();setup.hidden=true;stage.hidden=false;await refresh();}
+   try{status.textContent='Emparejando…';const d=await api('pair','POST',{code});token=d.token;rememberToken(token);++sessionGen;clearCache();setup.hidden=true;stage.hidden=false;await refresh();}
    catch(e){status.textContent=e.message;}finally{btn.disabled=false;}
  });
  document.getElementById('disconnect').addEventListener('click',()=>{
-   token='';++sessionGen;++displaySerial;stopClock();for(const node of area.querySelectorAll('[data-object-url]'))URL.revokeObjectURL(node.dataset.objectUrl);
+   token='';rememberToken('');++sessionGen;++displaySerial;stopClock();for(const node of area.querySelectorAll('[data-object-url]'))URL.revokeObjectURL(node.dataset.objectUrl);
    deck.clear();clearCache();stage.hidden=true;setup.hidden=false;status.textContent='Dispositivo desconectado de este navegador.';
  });
  document.getElementById('code').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pair').click();});
  setInterval(async()=>{if(!token)return;try{const result=await api('service');const previous=serviceSuspended;serviceApply(result.service);await api('service','POST',{revision:result.service.revision,suspended:serviceSuspended});if(previous&&!serviceSuspended)refresh();}catch(e){}},15000);
- setInterval(()=>{if(token)api('heartbeat','POST').catch(()=>{});},60000);
+ setInterval(()=>{if(token)api('heartbeat','POST',{app_version:isWebOS?'webos-0.1.0':'browser-0.3.7',active_mode:activeMode,cached_media:cache.size}).catch(()=>{});},60000);
+ async function restoreWebOSSession(){
+   const previous=savedToken();
+   if(!/^[a-f0-9]{64}$/.test(previous)){if(previous)rememberToken('');return;}
+   token=previous;++sessionGen;
+   status.textContent='Recuperando vinculación de esta TV…';
+   try{
+     await api('service');
+     setup.hidden=true;stage.hidden=false;status.textContent='';
+     await refresh();
+   }catch(e){
+     token='';rememberToken('');++sessionGen;setup.hidden=false;stage.hidden=true;
+     status.textContent='Esta pantalla necesita emparejarse nuevamente con un código del portal.';
+   }
+ }
+ if(isWebOS)restoreWebOSSession();
 })();

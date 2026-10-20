@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2Cam Digital Signage para LG webOS</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#101a2b;color:#fff;font-family:Arial,sans-serif}
+main{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px;box-sizing:border-box}
+h1{font-size:56px;margin:0}p{font-size:27px;line-height:1.4}button{font:inherit;font-size:28px;padding:18px 42px;background:#174589;color:white;border:3px solid #95cbff;border-radius:12px}
+button:focus-visible{outline:4px solid #fff}
+small{font-size:20px;color:#cbd6e3}
+</style>
+</head>
+<body>
+<main>
+<h1>2Cam Digital Signage</h1>
+<p id="message" role="status" aria-live="polite">Conectando con el portal seguro de 2Cam…</p>
+<button type="button" id="retry">Reintentar conexión</button>
+<small>Conexión a internet requerida · LG webOS TV</small>
+</main>
+<script>
+(function () {
+  'use strict';
+  // Hosted app: all pairing, configuration and media stay on the existing
+  // HTTPS portal origin. No credential or content is embedded in this IPK.
+  var portal='https://www.2cam.services/digitaltv/portal/public/player.php?client=webos';
+  function connect(){
+    document.getElementById('message').textContent='Abriendo el reproductor seguro…';
+    window.location.replace(portal);
+  }
+  document.getElementById('retry').addEventListener('click',connect);
+  window.setTimeout(connect,300);
+}());
+</script>
+</body>
+</html>
