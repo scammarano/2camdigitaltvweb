@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           mkdir -p source-delivery
           git archive --format=zip --output=source-delivery/web-P6-0434-source.zip HEAD app public database tests/update_files.json version.txt
-          sha256sum source-delivery/web-0431-source.zip > source-delivery/SHA256SUMS.txt
+          sha256sum source-delivery/web-P6-0434-source.zip > source-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/feat/device-log-export-v0431'
         with:
