@@ -26,6 +26,8 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' file; do php -l "$file" >/dev/null; done < <(find app public database -type f -name '*.php' -print0)
       - run: php tests/config_modes_test.php
+      - name: Prevent Signage or Sports/Turnos trust-key loss
+        run: python3 tests/trust_keys_continuity_test.py
       - name: Check runtime files absent
         shell: bash
         run: |
