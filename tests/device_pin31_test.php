@@ -27,6 +27,24 @@ pin31_check($rev2===2,'Revision not monotonic');
 db()->prepare("UPDATE device_pin_commands SET expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE device_id=?")->execute([$id]);
 pin31_check(ds_pin_pending(2,$id,$token)['pending']===false,'Expired PIN delivered');
 pin31_check(!ds_pin_ack(2,$id,$token,$rev2),'Expired PIN accepted');
+// P6: PIN may be staged before a device ever receives a bearer token.
+db()->prepare("INSERT INTO devices(tenant_id,name,orientation,mode) VALUES(2,'PIN P6 pre-pair fixture','landscape',1)")->execute();
+$unpaired=(int)db()->lastInsertId();
+$staged=ds_pin_issue(2,$unpaired,'67390215',100);
+pin31_check($staged===1,'Pre-pair revision must begin at one');
+$waiting=dbone('SELECT token_binding,status FROM device_pin_commands WHERE device_id=?',[$unpaired]);
+pin31_check($waiting['token_binding']===str_repeat('0',64)&&$waiting['status']==='pending','Pre-pair command not retained securely');
+$pairedToken=hash('sha256','p6-device-new-token');
+pin31_check(ds_pin_pending(2,$unpaired,$pairedToken)['pending']===false,'Pre-pair PIN exposed before token binding');
+ds_pin_bind_after_pair(1,$unpaired,$pairedToken); // Foreign tenant cannot rebind.
+pin31_check(ds_pin_pending(2,$unpaired,$pairedToken)['pending']===false,'Cross-tenant PIN rebind succeeded');
+db()->prepare('UPDATE devices SET device_token_hash=? WHERE id=?')->execute([$pairedToken,$unpaired]);
+ds_pin_bind_after_pair(2,$unpaired,$pairedToken);
+pin31_check(ds_pin_pending(2,$unpaired,$pairedToken)['pin']==='67390215','Pre-pair PIN not delivered after pairing');
+pin31_check(ds_pin_ack(2,$unpaired,$pairedToken,$staged),'Pre-pair PIN ACK failed');
+pin31_check(ds_pin_pending(2,$unpaired,$pairedToken)['pending']===false,'Applied P6 PIN replayed');
+db()->prepare('DELETE FROM device_pin_commands WHERE device_id=?')->execute([$unpaired]);
+db()->prepare('DELETE FROM devices WHERE id=?')->execute([$unpaired]);
 db()->prepare('DELETE FROM device_pin_commands WHERE device_id=?')->execute([$id]);
 db()->prepare('DELETE FROM devices WHERE id=?')->execute([$id]);
-echo "DEVICE_PIN31_PASS tenant binding encryption ACK expiry and no replay\n";
+echo "DEVICE_PIN_P6_PASS pre-pair tenant binding encryption ACK expiry and no replay\n";
