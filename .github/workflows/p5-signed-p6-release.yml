@@ -26,7 +26,7 @@ jobs:
       DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
       DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
       DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
-      ANDROID_SOURCE_SHA: 9f53f54155e5e660e5e01dcb52a53fefc2fbfdd8
+      ANDROID_SOURCE_SHA: c5b9ff67c388b4fd07f738617d03691ba72ac58d
     steps:
       - uses: actions/checkout@v4
         with:
