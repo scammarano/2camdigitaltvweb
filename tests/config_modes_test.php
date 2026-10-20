@@ -10,6 +10,10 @@ $channel=array_values(array_filter(ds_config_schema()['fields'],static fn($f)=>$
 expect($channel['options']===['stable'=>'Solo estables','debug'=>'Estables y pruebas'],'Exactly two unified channel options');
 foreach([1,2,3,4] as $mode){$v['primary_mode']=$mode;expect(ds_config_validate($v)['primary_mode']===$mode,'Four modes');}
 $v['enabled_modes']=7;rejects(fn()=>ds_config_validate($v));$v=ds_config_defaults();
+$legacy=ds_config_validate(['primary_mode'=>2,'enabled_modes'=>0]);
+expect($legacy['enabled_modes']===3,'P6 restores base Signage and Overlay from old mask zero');
+$unlicensed=ds_config_validate(['primary_mode'=>2,'enabled_modes'=>1]);
+expect($unlicensed['enabled_modes']===3,'P6 Overlay remains available without operational modules');
 $v['overlay_opacity']=101;rejects(fn()=>ds_config_validate($v));$v=ds_config_defaults();
 $v['overlay_duration_sec']=90;$v['overlay_interval_sec']=60;expect(ds_config_validate($v)['overlay_duration_sec']===90,'Window and subsequent pause are independent');
 $old=ds_config_validate(['primary_mode'=>3,'smart_app'=>'scoreboard','smart_header_pct'=>40,'enabled_modes'=>7]);

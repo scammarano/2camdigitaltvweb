@@ -2,9 +2,9 @@ name: Web portal CI
 
 on:
   push:
-    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431]
+    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431, fix/p6-pin-overlay-boot-20261019]
   pull_request:
-    branches: [main]
+    branches: [main, feat/device-log-export-v0431]
   workflow_dispatch:
 
 permissions:
@@ -40,17 +40,17 @@ jobs:
           fi
           test -f version.txt
       - name: Archive reviewed source for offline signing
-        if: github.ref == 'refs/heads/feat/device-log-export-v0431'
+        if: github.ref == 'refs/heads/feat/device-log-export-v0431' || github.ref == 'refs/heads/fix/p6-pin-overlay-boot-20261019'
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p source-delivery
-          git archive --format=zip --output=source-delivery/web-0431-source.zip HEAD app public database tests/update_files.json version.txt
-          sha256sum source-delivery/web-0431-source.zip > source-delivery/SHA256SUMS.txt
+          git archive --format=zip --output=source-delivery/web-P6-0434-source.zip HEAD app public database tests/update_files.json version.txt
+          sha256sum source-delivery/web-P6-0434-source.zip > source-delivery/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/feat/device-log-export-v0431'
         with:
-          name: web-0431-source-for-offline-signing
+          name: web-P6-0434-source-for-offline-signing
           path: source-delivery/
           retention-days: 10
 
@@ -76,7 +76,7 @@ jobs:
         run: |
           php -r 'file_put_contents("config/config.php", "<?php return ".var_export(["app_url"=>"http://localhost","app_key"=>str_repeat("C1-MIGRATION-CI-KEY!",4),"db_host"=>"127.0.0.1","db_name"=>"signage_test","db_user"=>"root","db_pass"=>"testpass"],true).";");'
           php tests/config_tenant_test.php
-          php -r 'require "app/bootstrap.php"; $m=require ROOT."/database/migrations/0.4.33.php"; $m(db());'
+          php -r 'require "app/bootstrap.php"; $m=require ROOT."/database/migrations/0.4.34.php"; $m(db());'
           php tests/github_updater_test.php
           php tests/device_crud_test.php forged
           php tests/device_crud_test.php identity

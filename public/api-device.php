@@ -4,6 +4,7 @@ require dirname(__DIR__).'/app/bootstrap.php';
 require_once ROOT.'/app/domain.php';
 require_once ROOT.'/app/playback.php';
 require_once ROOT.'/app/mode_runtime.php';
+require_once ROOT.'/app/device_pin.php';
 require_once ROOT.'/app/device_config.php';require_once ROOT.'/app/media_formats.php';
 require_once ROOT.'/app/device_service.php';
 header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
@@ -35,9 +36,16 @@ try {
     $hash=hash_hmac('sha256',$code,cfg()['app_key']);
     $d=dbone('SELECT id,tenant_id FROM devices WHERE pairing_code_hash=? AND pairing_expires>UTC_TIMESTAMP()',[$hash]);
     if(!$d)api_out(['error'=>'Código expirado o no válido'],401);
-    $token=bin2hex(random_bytes(32));
-    $count=execsql('UPDATE devices SET pairing_code_hash=NULL,pairing_expires=NULL,device_token_hash=?,last_seen=UTC_TIMESTAMP() WHERE id=? AND tenant_id=? AND pairing_code_hash=?',[hash('sha256',$token),(int)$d['id'],(int)$d['tenant_id'],$hash]);
-    if($count!==1)api_out(['error'=>'Código utilizado por otra pantalla'],409);
+    $token=bin2hex(random_bytes(32));$tokenHash=hash('sha256',$token);
+    $pdo=db();$pdo->beginTransaction();
+    try {
+      $s=$pdo->prepare('UPDATE devices SET pairing_code_hash=NULL,pairing_expires=NULL,device_token_hash=?,last_seen=UTC_TIMESTAMP() WHERE id=? AND tenant_id=? AND pairing_code_hash=? AND pairing_expires>UTC_TIMESTAMP()');
+      $s->execute([$tokenHash,(int)$d['id'],(int)$d['tenant_id'],$hash]);
+      if($s->rowCount()!==1){$pdo->rollBack();api_out(['error'=>'Código utilizado o expirado'],409);}
+      // Bind a pre-pairing PIN only after this screen accepted its pairing code.
+      ds_pin_bind_after_pair((int)$d['tenant_id'],(int)$d['id'],$tokenHash);
+      $pdo->commit();
+    }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
     log_event('device_paired',['device_id'=>(int)$d['id'],'tenant_id'=>(int)$d['tenant_id']]);
     api_out(['token'=>$token,'device_id'=>(int)$d['id']]);
   }

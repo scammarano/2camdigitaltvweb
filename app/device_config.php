@@ -18,6 +18,8 @@ function ds_config_validate(array $input):array {
  $input=ds_config_migrate_v1($input);$defaults=ds_config_defaults();
  foreach($input as $key=>$val)if(!array_key_exists($key,$defaults))throw new RuntimeException('Parámetro desconocido: '.$key);
  $full=array_merge($defaults,$input);$out=[];
+ // Some older portals wrote zero to the invisible mask. Migrate safely.
+ if(is_int($full['enabled_modes']))$full['enabled_modes']|=3;
  foreach(ds_config_schema()['fields'] as $f){$k=$f['key'];$v=$full[$k];
   if($f['type']==='bool'){
    if(!is_bool($v))throw new RuntimeException('Tipo booleano requerido: '.$k);$out[$k]=$v;
@@ -28,7 +30,10 @@ function ds_config_validate(array $input):array {
    if(!is_int($v)||$v<$f['min']||$v>$f['max'])throw new RuntimeException('Fuera de rango: '.$k);$out[$k]=$v;
   }
  }
- if(($out['enabled_modes']&(1<<($out['primary_mode']-1)))===0)throw new RuntimeException('El modo principal debe estar habilitado');
+ // Cartelera and Overlay are base capabilities. A legacy hidden bit must not
+ // make a configured advertisement impossible to activate. Extra modules stay gated.
+ $out['enabled_modes']|=3;
+ if(($out['enabled_modes']&(1<<($out['primary_mode']-1)))===0)throw new RuntimeException('El módulo seleccionado no está habilitado para esta pantalla');
  return $out;
 }
 function ds_config_form_input(array $post):array {
@@ -54,7 +59,7 @@ function ds_config_form(array $c,int $tid,int $did):void {
     continue;
   }
   if($f['type']==='bool'){echo '<label class="d-block mb-2"><input type="checkbox" name="'.h($k).'"'.($c[$k]?' checked':'').'> '.h($f['label']).'</label>';continue;}
-  if($f['type']==='mask'){echo '<details class="mb-3"><summary><strong>Avanzado: modos permitidos</strong> (no selecciona el modo actual)</summary><p class="small text-muted">Estos permisos limitan qué modos puede ejecutar la pantalla. El modo activo lo determina la programación del portal o la selección local.</p>';foreach(ds_config_schema()['modes'] as $id=>$label){$bit=1<<((int)$id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> '.h($label).'</label>';}echo '</details>';continue;}
+  if($f['type']==='mask'){echo '<details class="mb-3"><summary><strong>Administración avanzada de módulos</strong></summary><p class="small text-muted">Cartelera y Overlay están disponibles como modos base. Turnos y Marcador incluyen un motor operativo adicional y se habilitan por separado. Esto no cambia el modo activo ni las playlists.</p>';foreach([3,4] as $id){$label=ds_config_schema()['modes'][(string)$id];$bit=1<<($id-1);echo '<label class="d-block"><input type="checkbox" name="mode_'.$bit.'"'.($c[$k]&$bit?' checked':'').'> Habilitar módulo '.h($label).'</label>';}echo '</details>';continue;}
   echo '<label class="form-label">'.h($k==='primary_mode'?'Modo de respaldo del portal (fuera de programación)':$f['label']).'</label>';
   if($f['type']==='playlist'){
    $modeBit=str_starts_with($k,'overlay_')?2:(str_starts_with($k,'queue_')?4:(str_starts_with($k,'scoreboard_')?8:1));
@@ -85,7 +90,7 @@ function ds_config_json(array $settings):string {return json_encode(ds_config_va
 function ds_config_for_device(int $deviceId,int $tid):array {
  $row=dbone('SELECT revision,config_json,changed_at FROM device_config_desired WHERE device_id=? AND tenant_id=?',[$deviceId,$tid]);
  if($row){$v=json_decode($row['config_json'],true,8,JSON_THROW_ON_ERROR);
-   if(!array_key_exists('primary_mode',$v)){$device=dbone('SELECT mode FROM devices WHERE id=? AND tenant_id=?',[$deviceId,$tid]);$rawMode=(int)($device['mode']??1);$mask=(int)($v['enabled_modes']??7);$v['primary_mode']=($mask&(1<<($rawMode-1)))?$rawMode:(($mask&1)?1:(($mask&2)?2:3));}
+   if(!array_key_exists('primary_mode',$v)){$device=dbone('SELECT mode FROM devices WHERE id=? AND tenant_id=?',[$deviceId,$tid]);$rawMode=(int)($device['mode']??1);$mask=((int)($v['enabled_modes']??7))|3;$v['primary_mode']=($mask&(1<<($rawMode-1)))?$rawMode:1;}
    return ['revision'=>(int)$row['revision'],'settings'=>ds_config_validate($v),'changed_at'=>$row['changed_at']];}
  $d=dbone('SELECT mode FROM devices WHERE id=? AND tenant_id=?',[$deviceId,$tid]);
  $defaults=ds_config_defaults();$defaults['primary_mode']=(int)($d['mode']??1);
@@ -99,7 +104,9 @@ function ds_mode_playlist(array $c,int $mode):int {
 }
 function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
  require_once __DIR__.'/domain.php';
- if($mode<1||$mode>4||!($c['enabled_modes']&(1<<($mode-1))))throw new RuntimeException('El modo no está habilitado');
+ if($mode<1||$mode>4)throw new RuntimeException('Modo inválido');
+ if($mode>=3 && !($c['enabled_modes']&(1<<($mode-1))))
+    throw new RuntimeException($mode===3?'El módulo Turnos no está habilitado para esta pantalla':'El módulo Marcador deportivo no está habilitado para esta pantalla');
  $layout=ds_mode_layout($c,$mode);$id=ds_mode_playlist($c,$mode);$ids=$id>0?[$id]:[];
  if(!$ids&&$mode===1){
   $device=dbone('SELECT active_playlist_id FROM devices WHERE id=? AND tenant_id=?',[$did,$tid]);
