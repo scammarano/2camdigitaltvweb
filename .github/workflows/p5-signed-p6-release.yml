@@ -1,0 +1,194 @@
+name: P5-continuity P6 signed release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/device-log-export-v0431]
+    paths:
+      - .github/workflows/p5-signed-p6-release.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: p5-continuity-web-0434-android-0423
+  cancel-in-progress: false
+
+jobs:
+  build-permanently-signed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: p5-signing
+    env:
+      P5_ANDROID_KEYSTORE_B64: ${{ secrets.P5_ANDROID_KEYSTORE_B64 }}
+      P5_RSA_PRIVATE_PEM: ${{ secrets.P5_RSA_PRIVATE_PEM }}
+      DS_P5_STORE_PASSWORD: ${{ secrets.P5_ANDROID_STORE_PASSWORD }}
+      DS_P5_KEY_ALIAS: ${{ secrets.P5_ANDROID_KEY_ALIAS }}
+      DS_P5_KEY_PASSWORD: ${{ secrets.P5_ANDROID_KEY_PASSWORD }}
+      ANDROID_SOURCE_SHA: c5b9ff67c388b4fd07f738617d03691ba72ac58d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: scammarano/digital-signage-android
+          ref: ${{ env.ANDROID_SOURCE_SHA }}
+          path: android
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - run: sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Confirm source tests passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/scammarano/2camdigitaltvweb/actions/runs?head_sha=${GITHUB_SHA}&per_page=40" \
+            --jq '[.workflow_runs[] | select(.name=="Web portal CI" and .conclusion=="success")] | length' | grep -Eq '^[1-9][0-9]*$'
+          gh api "repos/scammarano/digital-signage-android/actions/runs?head_sha=${ANDROID_SOURCE_SHA}&per_page=40" \
+            --jq '[.workflow_runs[] | select(.name=="Fire Sports direct LAN APK" and .conclusion=="success")] | length' | grep -Eq '^[1-9][0-9]*$'
+      - name: Require P5 secrets and prepare temporary protected key files
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          for v in P5_ANDROID_KEYSTORE_B64 P5_RSA_PRIVATE_PEM DS_P5_STORE_PASSWORD DS_P5_KEY_ALIAS DS_P5_KEY_PASSWORD; do
+            test -n "${!v:-}" || { echo "::error::Missing protected P5 signing secret: ${v}. No release published."; exit 1; }
+          done
+          printf '%s' "$P5_ANDROID_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/p5-android.jks"
+          printf '%s' "$P5_RSA_PRIVATE_PEM" > "$RUNNER_TEMP/p5-update-rsa.pem"
+          chmod 600 "$RUNNER_TEMP/p5-android.jks" "$RUNNER_TEMP/p5-update-rsa.pem"
+          test -s "$RUNNER_TEMP/p5-android.jks"
+          openssl pkey -in "$RUNNER_TEMP/p5-update-rsa.pem" -noout >/dev/null
+          echo "DS_P5_KEYSTORE_PATH=$RUNNER_TEMP/p5-android.jks" >> "$GITHUB_ENV"
+      - name: Compile permanently P5-signed Android release
+        working-directory: android
+        run: |
+          set -euo pipefail
+          python3 scripts/create_icon.py
+          gradle --no-daemon --stacktrace -PdsPermanentSigning=true :app:assembleRelease
+          test -s app/build/outputs/apk/release/app-release.apk
+      - name: Download and verify previous P5 production signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/p5-baseline
+          gh release download web-v0.4.33 --repo scammarano/2camdigitaltvweb \
+            --pattern '2Cam_Digital_Signage_v0.4.22_DEBUG.apk' --dir /tmp/p5-baseline
+      - name: Build signed web ZIP and authenticated APK envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/package_p5_signed_release.py \
+            --web-root . \
+            --android-apk android/app/build/outputs/apk/release/app-release.apk \
+            --previous-apk /tmp/p5-baseline/2Cam_Digital_Signage_v0.4.22_DEBUG.apk \
+            --android-source "$ANDROID_SOURCE_SHA" \
+            --rsa-key "$RUNNER_TEMP/p5-update-rsa.pem" \
+            --public-key .release-assets/update-public.txt \
+            --aapt "$ANDROID_HOME/build-tools/35.0.0/aapt" \
+            --apksigner "$ANDROID_HOME/build-tools/35.0.0/apksigner" \
+            --out signed-p5-release
+          (cd signed-p5-release && sha256sum -c SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-p5-signed-delivery
+          path: signed-p5-release/
+          if-no-files-found: error
+          retention-days: 7
+
+  prove-in-place-upgrade:
+    needs: build-permanently-signed
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [22, 29]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-p5-signed-delivery
+          path: signed-p5-release
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+      - name: Download original P5 installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/p5-baseline
+          gh release download web-v0.4.33 --repo scammarano/2camdigitaltvweb \
+            --pattern '2Cam_Digital_Signage_v0.4.22_DEBUG.apk' --dir /tmp/p5-baseline
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: default
+          arch: x86_64
+          profile: Nexus 6
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb install /tmp/p5-baseline/2Cam_Digital_Signage_v0.4.22_DEBUG.apk
+            adb shell dumpsys package com.digitalsignage.tv | grep -F versionName=0.4.22-debug
+            adb root
+            adb wait-for-device
+            adb shell 'mkdir -p /data/user/0/com.digitalsignage.tv/files'
+            adb shell 'echo p5-upgrade-retained >/data/user/0/com.digitalsignage.tv/files/p5-upgrade-proof'
+            adb install -r signed-p5-release/2Cam_Digital_Signage_v0.4.23_DEBUG.apk
+            adb shell dumpsys package com.digitalsignage.tv | grep -F versionName=0.4.23-debug
+            adb shell dumpsys package com.digitalsignage.tv | grep -F versionCode=423
+            adb shell cat /data/user/0/com.digitalsignage.tv/files/p5-upgrade-proof | grep -Fx p5-upgrade-retained
+            echo P5_IN_PLACE_UPGRADE_PASS_API_${{ matrix.api }}
+
+  publish-verified-release:
+    needs: [build-permanently-signed, prove-in-place-upgrade]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-p5-signed-delivery
+          path: signed-p5-release
+      - name: Publish only fully validated P5-signed release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd signed-p5-release
+          sha256sum -c SHA256SUMS.txt
+          if gh release view web-v0.4.34 --repo scammarano/2camdigitaltvweb >/dev/null 2>&1; then
+            echo "::error::web-v0.4.34 already exists. Never overwrite a signed publication."
+            exit 1
+          fi
+          gh release create web-v0.4.34 \
+            SIGNAGE_UPDATE_v0.4.34_P6_PIN_OVERLAY_BOOT_RSA.zip \
+            2CAM_APK_android-tv_v0.4.23-debug_RSA.zip \
+            2Cam_Digital_Signage_v0.4.23_DEBUG.apk \
+            --repo scammarano/2camdigitaltvweb \
+            --target "$GITHUB_SHA" \
+            --title "Digital Signage 0.4.34 + APK 0.4.23 · P5 signed continuity" \
+            --notes-file release-notes.md
+          echo "P5_SIGNED_DELIVERY_PUBLISHED"
