@@ -117,6 +117,7 @@ jobs:
           npm install --no-save --package-lock=false playwright
           npx playwright install --with-deps chromium
           php -S 127.0.0.1:8080 -t public >test-results/php-server.log 2>&1 &
+          python3 tests/webos_downloads_http.py
           python3 tests/shared_service_http.py
           python3 tests/application_config_http.py
           python3 tests/settings30_http.py
