@@ -1,0 +1,26 @@
+/* webOS TV 25: 10-foot UI and remote navigation, kiosk clean viewport. */
+.ds-webos-tv{font-family:Arial,Helvetica,sans-serif;font-size:24px;overflow:hidden}
+.ds-webos-tv .ds-player-card{width:min(900px,88vw);padding:55px 70px;border-radius:25px}
+.ds-webos-tv .ds-player-card h1{font-size:52px;letter-spacing:0}
+.ds-webos-tv .ds-player-card p{font-size:27px;line-height:1.55}
+.ds-webos-tv .ds-player-kicker{font-size:20px}
+.ds-webos-tv .ds-player-form label{font-size:22px}
+.ds-webos-tv .ds-player-form input{font-size:42px;height:85px}
+.ds-webos-tv .ds-player-form button{font-size:30px;padding:23px}
+.ds-webos-tv #status,.ds-webos-tv .ds-player-hint{font-size:22px;line-height:1.35}
+.ds-webos-tv .ds-player-mark{width:85px;height:85px;font-size:45px}
+.ds-webos-tv .ds-player-state{display:none;bottom:16px;left:16px;right:16px;font-size:22px}
+.ds-webos-tv #disconnect,.ds-webos-tv #lg-menu-close{display:none!important}
+.ds-webos-tv.ds-lg-menu-open .ds-player-state{display:block;bottom:95px}
+.ds-webos-tv.ds-lg-menu-open #disconnect,
+.ds-webos-tv.ds-lg-menu-open #lg-menu-close{
+display:block!important;position:absolute;top:20px;right:18px;z-index:30;
+border:3px solid #fff;border-radius:12px;background:rgba(14,34,72,.95);
+color:#fff;padding:20px 28px;font-size:26px;opacity:1;
+}
+.ds-webos-tv.ds-lg-menu-open #lg-menu-close{right:290px}
+.ds-webos-tv button:focus-visible,.ds-webos-tv input:focus-visible{
+outline:5px solid #ffd35d;outline-offset:5px;
+}
+.ds-webos-tv .ds-player-stage .ds-display-frame{background:#000}
+.ds-webos-tv .ds-player-stage .ds-display-area{background:#000}
