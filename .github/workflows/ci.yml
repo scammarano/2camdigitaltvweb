@@ -2,7 +2,7 @@ name: Web portal CI
 
 on:
   push:
-    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431, fix/p6-pin-overlay-boot-20261019]
+    branches: [main, feat/four-modes-parity-v0419, feat/device-log-export-v0431, fix/p6-pin-overlay-boot-20261019, fix/p7-p5-permanent-signing-20261020]
   pull_request:
     branches: [main, feat/device-log-export-v0431]
   workflow_dispatch:
@@ -26,6 +26,8 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' file; do php -l "$file" >/dev/null; done < <(find app public database -type f -name '*.php' -print0)
       - run: php tests/config_modes_test.php
+      - run: python3 -m py_compile scripts/package_p5_signed_release.py tests/p5_signing_pipeline_test.py
+      - run: python3 tests/p5_signing_pipeline_test.py
       - name: Prevent Signage or Sports/Turnos trust-key loss
         run: python3 tests/trust_keys_continuity_test.py
       - name: Check runtime files absent
