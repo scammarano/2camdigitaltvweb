@@ -28,7 +28,10 @@ function ds_config_validate(array $input):array {
    if(!is_int($v)||$v<$f['min']||$v>$f['max'])throw new RuntimeException('Fuera de rango: '.$k);$out[$k]=$v;
   }
  }
- if(($out['enabled_modes']&(1<<($out['primary_mode']-1)))===0)throw new RuntimeException('El modo principal debe estar habilitado');
+ // Cartelera and Overlay are base capabilities. A legacy hidden bit must not
+ // make a configured advertisement impossible to activate. Extra modules stay gated.
+ $out['enabled_modes']|=3;
+ if(($out['enabled_modes']&(1<<($out['primary_mode']-1)))===0)throw new RuntimeException('El módulo seleccionado no está habilitado para esta pantalla');
  return $out;
 }
 function ds_config_form_input(array $post):array {
@@ -99,7 +102,9 @@ function ds_mode_playlist(array $c,int $mode):int {
 }
 function ds_mode_require_playlist(array $c,int $tid,int $did,int $mode):void {
  require_once __DIR__.'/domain.php';
- if($mode<1||$mode>4||!($c['enabled_modes']&(1<<($mode-1))))throw new RuntimeException('El modo no está habilitado');
+ if($mode<1||$mode>4)throw new RuntimeException('Modo inválido');
+ if($mode>=3 && !($c['enabled_modes']&(1<<($mode-1))))
+    throw new RuntimeException($mode===3?'El módulo Turnos no está habilitado para esta pantalla':'El módulo Marcador deportivo no está habilitado para esta pantalla');
  $layout=ds_mode_layout($c,$mode);$id=ds_mode_playlist($c,$mode);$ids=$id>0?[$id]:[];
  if(!$ids&&$mode===1){
   $device=dbone('SELECT active_playlist_id FROM devices WHERE id=? AND tenant_id=?',[$did,$tid]);
