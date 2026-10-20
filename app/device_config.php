@@ -90,7 +90,7 @@ function ds_config_json(array $settings):string {return json_encode(ds_config_va
 function ds_config_for_device(int $deviceId,int $tid):array {
  $row=dbone('SELECT revision,config_json,changed_at FROM device_config_desired WHERE device_id=? AND tenant_id=?',[$deviceId,$tid]);
  if($row){$v=json_decode($row['config_json'],true,8,JSON_THROW_ON_ERROR);
-   if(!array_key_exists('primary_mode',$v)){$device=dbone('SELECT mode FROM devices WHERE id=? AND tenant_id=?',[$deviceId,$tid]);$rawMode=(int)($device['mode']??1);$mask=(int)($v['enabled_modes']??7);$v['primary_mode']=($mask&(1<<($rawMode-1)))?$rawMode:(($mask&1)?1:(($mask&2)?2:3));}
+   if(!array_key_exists('primary_mode',$v)){$device=dbone('SELECT mode FROM devices WHERE id=? AND tenant_id=?',[$deviceId,$tid]);$rawMode=(int)($device['mode']??1);$mask=((int)($v['enabled_modes']??7))|3;$v['primary_mode']=($mask&(1<<($rawMode-1)))?$rawMode:1;}
    return ['revision'=>(int)$row['revision'],'settings'=>ds_config_validate($v),'changed_at'=>$row['changed_at']];}
  $d=dbone('SELECT mode FROM devices WHERE id=? AND tenant_id=?',[$deviceId,$tid]);
  $defaults=ds_config_defaults();$defaults['primary_mode']=(int)($d['mode']??1);
