@@ -80,7 +80,8 @@ ob_start();
     <article class="ds-apps-card ds-apps-lg" data-platform="lg-webos">
       <span class="ds-apps-family">TV LG · webOS</span>
       <h2>2Cam Digital Signage para LG</h2>
-      <p>Reproductor para webOS TV conectado al mismo portal, con listas, programación y emparejamiento de seis dígitos.</p>
+      <p>Reproductor propio de webOS TV, conectado al portal, con listas, programación y emparejamiento de seis dígitos. Los formatos y franjas solo se muestran mientras 2Cam está abierta.</p>
+      <p class="ds-apps-warning"><strong>Overlay sobre Netflix, YouTube, TV en vivo o HDMI: NO disponible en este LG.</strong> webOS doméstico suspende las apps de terceros al abrir otra aplicación; tampoco permite una ventana 2Cam siempre encima. El paquete .ipk y publicar en LG Apps no eliminan esta limitación.</p>
       <div class="ds-lg-compatible">LG webOS TV · desarrollado para el modelo 75UR7800PSB (webOS 25), pendiente de prueba física</div>
       <p class="ds-apps-revision"><strong>v0.1.0 · Versión de pruebas</strong><br>
       Aplicación LG <code>.ipk</code>, diferente de Android <code>.apk</code>.</p>
@@ -89,8 +90,8 @@ ob_start();
       <p class="ds-apps-technical">La instalación .ipk se realiza desde una computadora mediante Developer Mode; no se instala pulsando el archivo en el navegador del LG.</p>
       <p class="ds-apps-technical"><a href="<?=h(url('webos-install.php'))?>">Guía paso a paso para instalar en LG</a>
       · <a href="<?=h($webosReleaseUrl)?>">Consultar publicación en GitHub</a></p>
-      <div class="ds-apps-tv-help"><strong>Sin Fire Stick ni caja Android</strong>
-      <p>Para una prueba inmediata abre el reproductor web. Esta primera versión no ofrece inicio automático al encender, overlay sobre otras aplicaciones ni caché offline persistente.</p></div>
+      <div class="ds-apps-tv-help"><strong>Cartelera sin hardware externo · Overlay global requiere otra solución</strong>
+      <p>Prueba inmediata: reproductor web. Las franjas dentro de 2Cam no equivalen a Overlay sobre otras apps. Si deseas publicidad encima de aplicaciones de Android/Fire TV, el reproductor y esas aplicaciones deben ejecutarse en el mismo dispositivo compatible; tampoco un Fire Stick puede superponer contenido sobre las apps internas de LG o una señal de otra entrada HDMI. No hay inicio automático ni caché offline persistente en esta versión.</p></div>
     </article>
     <?php endif; ?>
     <?php foreach($showPlatforms as $slug=>$name):
