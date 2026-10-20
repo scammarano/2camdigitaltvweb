@@ -1,0 +1,15 @@
+{
+  "id": "com.twocam.signage",
+  "version": "0.1.0",
+  "vendor": "2Cam Services",
+  "type": "web",
+  "main": "index.html",
+  "title": "2Cam Digital Signage",
+  "icon": "icon.png",
+  "largeIcon": "largeicon.png",
+  "resolution": "1920x1080",
+  "bgColor": "#101a2b",
+  "disableBackHistoryAPI": true,
+  "handlesRelaunch": false,
+  "appDescription": "Pantallas de 2Cam Digital Signage para LG webOS"
+}
